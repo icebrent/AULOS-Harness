@@ -26,7 +26,6 @@ import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import { REPO_ROOT, connectFreshWorkspace, newEnglishPage, probeFreePort, requireDist, saveFailureShot } from './support.ts'
-import { backToConversation, openFullTrajectory } from './scaffold.ts'
 
 const WEB_SURFACE_PROMPT = fileURLToPath(new URL('./snapshots/web-runtime-context/web-surface-prompt.expected.md', import.meta.url))
 
@@ -580,10 +579,16 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY || notReady.length > 0)('web smoke
 
   it('trajectory opens from the Activity panel and the back bar returns to chat', async () => {
     onTestFailed(() => saveFailureShot(page, 'w5-tabs'))
-    await openFullTrajectory(page)
+    // Inlined from scaffold's openFullTrajectory: this file must stay in the
+    // client aggregate, which cannot import the host-plane scaffold helper.
+    await page.getByRole('tab', { name: 'Activity', exact: true }).click()
+    await page.getByRole('button', { name: 'Open full trajectory' }).click()
+    await page.getByLabel('Trajectory timeline').waitFor({ timeout: 30_000 })
     await screen(page, '05-trajectory-tab')
     await expect.poll(() => page.getByRole('tab', { name: 'Waterfall' }).count()).toBe(0)
-    await backToConversation(page)
+    await page.getByRole('button', { name: 'Back to conversation', exact: true }).click()
+    await page.locator('[data-conversation-scroll] [data-chat-anchor-key]').first()
+      .waitFor({ timeout: 30_000 })
     await screen(page, '07-back-to-chat')
   })
 

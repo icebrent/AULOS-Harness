@@ -1,15 +1,17 @@
 /**
  * InspectorPanel: the right column of the workspace layout — Context and
- * Activity tabs over the official session projections, with the selected
- * tool call's details as an embedded view.
+ * Activity tabs, with the selected tool call's details as an embedded view.
  *
- * Every figure rides a durable projection the host already computes:
+ * The Context figures ride the durable projections the host computes:
  * `contextPressure` / `contextBreakdown` (context occupancy), `tokenUsage`
  * (billing buckets + cache), and `sessionStats` (turn/step counts and wall
- * times). Nothing is re-derived from raw events; the presentation only
- * reshapes existing data. The model row is deliberately absent: the model
- * directory is a service, not a projection, so a reliable value is not
- * available to a pure reader here.
+ * times). The Activity tab's Recent Activity list is a lightweight
+ * presentation over the conversation node read model (`chat.legacy.nodes`,
+ * the assembler's compatibility projection): it names settled tool calls and
+ * their wall times from already-assembled nodes, never from raw session
+ * events. The model row is deliberately absent: the model directory is a
+ * service, not a projection, so a reliable value is not available to a pure
+ * reader here.
  */
 
 import { useState } from 'react'
@@ -88,7 +90,11 @@ function ContextRing({ percent, usedTokens, contextWindow, t }: {
   )
 }
 
-/** Recent settled tool calls, newest first, for the Activity tab. */
+/**
+ * Recent settled tool calls, newest first, for the Activity tab — a
+ * presentation over the conversation node read model (the assembler's
+ * compatibility projection), not a stats projection.
+ */
 function recentToolActivity(nodes: ConversationSnapshot['nodes']): { name: string; ms: number; isError: boolean }[] {
   const rows: { name: string; ms: number; isError: boolean }[] = []
   for (const node of nodes) {

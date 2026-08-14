@@ -1,5 +1,6 @@
 // Web e2e scenario: the input card holds one horizontal position across the
-// Chat and Trajectory tabs.
+// conversation and full-trajectory views (the v2 view ring: the trajectory
+// opens from the inspector's Activity panel, the back bar returns).
 //
 // The composer seat is the same node in both tabs, but it measures itself
 // against a different edge in each (see
@@ -49,8 +50,8 @@ import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import { createChatScrollFixture } from './chat-scroll-fixture.ts'
 import {
-  assertFixtureInventory, compareOrRefreshGolden, launchWebScaffold, seedSession, watchConsole,
-  webSnapshotMode, type WebScaffold,
+  assertFixtureInventory, compareOrRefreshGolden, launchWebScaffold, openFullTrajectory, seedSession,
+  watchConsole, webSnapshotMode, type WebScaffold,
 } from './scaffold.ts'
 import { newEnglishPage, saveFailureShot } from './support.ts'
 
@@ -185,14 +186,21 @@ function measureTab(page: Page): Promise<TabMetrics> {
 }
 
 /**
- * Show one tab and wait for the view that owns it to be laid out.
+ * Show one view — the conversation or the full trajectory — and wait for the
+ * view that owns it to be laid out.
  * @param page - the page under test.
- * @param tab - the tab to show.
+ * @param tab - the view to show.
  */
 async function showTab(page: Page, tab: 'Chat' | 'Trajectory'): Promise<void> {
-  await page.getByRole('tab', { name: tab, exact: true }).click()
-  if (tab === 'Trajectory') await page.getByLabel('Trajectory timeline').waitFor({ timeout: 30_000 })
-  else await page.locator('[data-conversation-scroll] [data-chat-anchor-key]').first().waitFor({ timeout: 30_000 })
+  if (tab === 'Trajectory') {
+    await openFullTrajectory(page)
+  } else {
+    // The trajectory view's back bar is the only route back; it is absent
+    // while the conversation is already shown.
+    const back = page.getByRole('button', { name: 'Back to conversation', exact: true })
+    if (await back.count() > 0) await back.click()
+    await page.locator('[data-conversation-scroll] [data-chat-anchor-key]').first().waitFor({ timeout: 30_000 })
+  }
   // Both measurements are taken after a paint, so a rectangle read mid-transition
   // cannot be reported as a shift the cascade did not cause.
   await page.evaluate(() => new Promise<void>((settle) => {
@@ -201,9 +209,10 @@ async function showTab(page: Page, tab: 'Chat' | 'Trajectory'): Promise<void> {
 }
 
 /**
- * Measure both tabs and the distances between them, leaving Chat shown.
+ * Measure both views and the distances between them, leaving the conversation
+ * shown.
  * @param page - the page under test.
- * @returns each tab's metrics and the card's displacement between them.
+ * @returns each view's metrics and the card's displacement between them.
  */
 async function compareTabs(page: Page): Promise<TabComparison> {
   await showTab(page, 'Chat')
@@ -314,7 +323,7 @@ describe('web e2e: input card position across view tabs', () => {
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     await openSeededSession(page)
-    await page.getByRole('tab', { name: 'Chat', exact: true }).waitFor({ timeout: 30_000 })
+    await page.locator('[data-conversation-scroll] [data-chat-anchor-key]').first().waitFor({ timeout: 30_000 })
     await page.getByText(FIXTURE.markers.assistant(FIXTURE.turns), { exact: false }).last()
       .waitFor({ timeout: 30_000 })
   }, 180_000)

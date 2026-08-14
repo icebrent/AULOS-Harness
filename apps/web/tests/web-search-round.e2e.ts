@@ -236,13 +236,19 @@ describe('web e2e: shipped default web search', () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-search-aria'))
     await expect.poll(() => page.getByText('SEARCH_DONE', { exact: true }).count(), { timeout: 15_000 })
       .toBeGreaterThanOrEqual(1)
-    await page.locator('[data-tool="web_search"]').waitFor({ timeout: 10_000 })
+    // The settled turn folds its tool activity; the quiet summary is the
+    // shipped surface the golden pins.
+    await page.getByRole('button', { name: /Completed · \d+ tools/ }).first().waitFor({ timeout: 10_000 })
     const snapshot = await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd)
     await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
   })
 
   it.skipIf(MODE === 'record')('scrolls the capped source list inside the fixed-height container', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-search-sources-scroll'))
+    // The settled turn folds its tool activity; expand the fold, then the row.
+    const fold = page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false }).first()
+    await fold.waitFor({ timeout: 10_000 })
+    await fold.click()
     const row = page.locator('[data-tool="web_search"] [data-expandable]').first()
     await row.click()
     await expect.poll(() => row.getAttribute('aria-expanded'), { timeout: 5_000 }).toBe('true')

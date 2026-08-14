@@ -314,7 +314,9 @@ describe('web e2e: empty-draft Cmd+Enter steers the whole queue', () => {
     await page.goto(scaffold.baseUrl, { waitUntil: 'load' })
     await page.waitForSelector('[class*="frame"]', { timeout: 30_000 })
     await connectFreshWorkspace(page, scaffold.workspaceCwd)
-    await page.getByText('Standard mode', { exact: true }).waitFor({ timeout: 10_000 })
+    // The mode selector settles on the Code card (the deployment default,
+    // standard) — the hero row where the staged preset is visible.
+    await page.getByRole('button', { name: /^Code/ }).waitFor({ timeout: 10_000 })
   }, 120_000)
 
   afterAll(async () => {

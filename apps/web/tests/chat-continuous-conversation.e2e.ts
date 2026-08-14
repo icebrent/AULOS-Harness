@@ -312,6 +312,10 @@ describe('web e2e: continuous conversation grown through the composer', () => {
       expect(results[0]?.data.message.content[0].isError).toBe(false)
       expect(toolResultText(results[0]!)).toBe(`${spec.toolResultMarker}\n`)
 
+      // Settled turns fold their tool activity; expand the latest collapsed
+      // fold to reach this turn's raw row.
+      const collapsed = page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false })
+      if (await collapsed.count() > 0) await collapsed.last().click()
       const toolRow = page.locator(`[data-chat-call-id="${spec.callId}"]`)
       await expect.poll(() => toolRow.count(), { timeout: 10_000 }).toBe(1)
       expect(await toolRow.textContent()).toContain(spec.toolResultMarker)

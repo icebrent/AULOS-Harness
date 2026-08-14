@@ -8,6 +8,9 @@ export type AgentPresetSettingsKey =
   | 'presetCodeName' | 'presetCodeDescription'
   | 'presetMinimalName' | 'presetMinimalDescription'
   | 'presetCordisName' | 'presetCordisDescription'
+  | 'modeChatName' | 'modeChatDescription'
+  | 'modeCodeName' | 'modeCodeDescription'
+  | 'modeMore' | 'modeMoreHint'
   | 'duplicate' | 'duplicateUnavailable' | 'delete' | 'presetId' | 'presetIdPlaceholder' | 'copyOf'
   | 'displayName' | 'displayNamePlaceholder'
   | 'inUse' | 'noDescription' | 'builtInGroup' | 'customGroup'
@@ -46,6 +49,14 @@ export const en: Record<AgentPresetSettingsKey, string> = {
   presetCordisName: 'Creator mode',
   presetCordisDescription:
     'Built for creating custom agent presets, with all Standard mode capabilities plus runtime inspection, plugin experiments, and preset-authoring guidance.',
+  modeChatName: 'Chat',
+  modeChatDescription:
+    'Discuss, analyze, and understand this workspace with a read-only conversational agent.',
+  modeCodeName: 'Code',
+  modeCodeDescription:
+    'Modify, run, and debug with the full coding agent, including file editing, shell, and git.',
+  modeMore: 'More',
+  modeMoreHint: 'Other agent presets, including Creator, Minimal, and Code Mode',
   duplicate: 'Duplicate',
   duplicateUnavailable: 'This deployment has no writable preset directory',
   delete: 'Delete',
@@ -106,6 +117,12 @@ export const zh: Record<AgentPresetSettingsKey, string> = {
   presetMinimalDescription: '仅提供持久 bash 与 str_replace_editor 的双工具编码 Agent。',
   presetCordisName: '创造模式',
   presetCordisDescription: '用于创建自定义 Agent preset：具备标准模式的全部能力，并提供运行时检查、插件实验和 preset 创作指导。',
+  modeChatName: 'Chat',
+  modeChatDescription: '以只读的 workspace-aware 对话 Agent 讨论、分析并理解当前 workspace。',
+  modeCodeName: 'Code',
+  modeCodeDescription: '使用功能完整的 Coding Agent 修改、执行与调试，包括文件编辑、Shell 与 Git。',
+  modeMore: '更多',
+  modeMoreHint: '其他 Agent 预设，包括创造模式、极简模式与 PTC 模式',
   duplicate: '复制',
   duplicateUnavailable: '此部署未配置可写的预设目录',
   delete: '删除',

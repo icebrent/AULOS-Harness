@@ -2,13 +2,11 @@
   - navigation "Session hierarchy":
     - button "Begin your reply with the" [disabled]
   - img
-  - text: Standard mode
+  - text: Code
+  - button "Show or hide the inspector"
   - button "Session log":
     - text: Session log
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
 - text: Begin your reply with the plain sentence "Reading the workspace now." as text, and in that same message call the bash tool with the command "echo alpha". After the tool result, reply with the single word DONE and stop. {{clock}}
 - button "Copy":
   - img
@@ -17,17 +15,8 @@
   - img
   - img
   - text: Context injection @deepseek-ai/dsh-system-prompt
-- button "Think The user wants me to begin with \"Reading the workspace now.\" and call bash with \"echo alpha\" in the same message. Then after the tool result, reply with the single word DONE and stop.":
-  - img
-  - img
-  - text: Think The user wants me to begin with "Reading the workspace now." and call bash with "echo alpha" in the same message. Then after the tool result, reply with the single word DONE and stop.
-- paragraph: Reading the workspace now.
-- button "Bash Print alpha to stdout":
-  - img
-  - img
-  - text: Bash Print alpha to stdout
+- status: Working… 1 tools
 - paragraph: partial
-- status: Deep diving...
 - textbox "Message the agent"
 - button "Commands":
   - img
@@ -37,4 +26,3 @@
   - img
 - button "6% of context used"
 - button "Stop generating"
-- text: 1 turns · 1 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 0% Input 7.8K tok · Output 109 tok

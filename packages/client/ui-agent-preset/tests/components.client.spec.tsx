@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 /**
  * The three conversation-adjacent surfaces: the General-settings row naming the
- * default for later sessions, the new-session chip naming the next one's, and
- * the session header's read-only label. The split is the host's rule — a
- * session's history is produced under its preset's tools, so the choice is
- * only ever offered before one starts.
+ * default for later sessions, the new-session mode selector (Chat / Code /
+ * More) naming the next one's, and the session header's read-only mode label.
+ * The split is the host's rule — a session's history is produced under its
+ * preset's tools, so the choice is only ever offered before one starts.
  */
 
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
@@ -19,6 +19,7 @@ import { AgentPresetSeat } from '../src/client/AgentPresetSeat.tsx'
 import type { AgentPresetSeatProps } from '../src/client/AgentPresetSeat.tsx'
 import type { AgentPresetSettingsState } from '../src/client/settings-store.ts'
 import type { AgentPresetSeatState } from '../src/client/seat-store.ts'
+import { CHAT_MODE_PRESET_ID, CODE_MODE_PRESET_ID } from '../src/client/modes.ts'
 import { en } from '../src/client/locales.ts'
 
 afterEach(cleanup)
@@ -33,11 +34,16 @@ const ROW_READY: AgentPresetSettingsState = {
   options: [{ id: 'standard', trust: 'system', name: '标准模式' }, { id: 'mine', trust: 'user' }],
 }
 
+// The roster the mode selector was built for: both primary presets plus one
+// advanced preset that must stay reachable through the More menu. `standard`
+// is system trust (its display copy comes from the active locale); the other
+// two are user trust, so their file metadata is what the surfaces show.
 const SEAT_READY: AgentPresetSeatState = {
   current: 'standard',
   options: [
-    { id: 'standard', trust: 'system', name: '标准模式', description: '完整的编码 agent。' },
-    { id: 'mine', trust: 'user' },
+    { id: CHAT_MODE_PRESET_ID, trust: 'user', name: 'Workspace Chat', description: '讨论与分析 workspace。' },
+    { id: CODE_MODE_PRESET_ID, trust: 'system', name: '标准模式', description: '完整的编码 agent。' },
+    { id: 'minimal', trust: 'user', name: '极简模式', description: '双工具编码 agent。' },
   ],
   busy: false,
   error: null,
@@ -74,7 +80,7 @@ function renderLabel(
   summary: { blank: boolean; agentPreset?: string } | undefined,
   roster: Partial<AgentPresetSettingsState> = {},
 ) {
-  // The chip and the label read the same roster, metadata included.
+  // The selector and the label read the same roster, metadata included.
   const store = createSnapshotStore<AgentPresetSettingsState>({
     ...ROW_READY, options: SEAT_READY.options, ...roster,
   })
@@ -200,66 +206,101 @@ describe('the General-settings row', () => {
   })
 })
 
-describe('the new-session chip', () => {
-  it('reads the roster once and shows the staged preset by name', async () => {
+describe('the new-session mode selector', () => {
+  it('reads the roster once and shows both primary modes plus More', async () => {
     const actions = renderSeat()
 
     await waitFor(() => { expect(actions.load).toHaveBeenCalledTimes(1) })
-    expect(screen.getByRole('button').textContent).toContain(en.presetStandardName)
-    expect(screen.getByRole('button').getAttribute('title')).toBe(en.seatHint)
+    // The two primary entries are named by mode, not by preset id.
+    expect(screen.getByRole('button', { name: new RegExp(en.modeChatName) })).toBeTruthy()
+    expect(screen.getByRole('button', { name: new RegExp(en.modeCodeName) })).toBeTruthy()
+    expect(screen.getByRole('button', { name: en.modeMore })).toBeTruthy()
   })
 
-  it('offers each preset with what it is for', () => {
+  it('stages the Chat preset from the Chat card', () => {
+    const actions = renderSeat({ current: CHAT_MODE_PRESET_ID })
+
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(en.modeChatName) }))
+
+    expect(actions.select).toHaveBeenCalledWith(CHAT_MODE_PRESET_ID)
+  })
+
+  it('stages the Code preset from the Code card', () => {
+    const actions = renderSeat()
+
+    fireEvent.click(screen.getByRole('button', { name: new RegExp(en.modeCodeName) }))
+
+    expect(actions.select).toHaveBeenCalledWith(CODE_MODE_PRESET_ID)
+  })
+
+  it('marks the staged mode card as pressed', () => {
+    renderSeat({ current: CHAT_MODE_PRESET_ID })
+
+    expect(screen.getByRole('button', { name: new RegExp(en.modeChatName) }).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByRole('button', { name: new RegExp(en.modeCodeName) }).getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('keeps every non-primary preset reachable behind the More menu', () => {
     renderSeat()
 
-    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('button', { name: en.modeMore }))
 
-    // The id alone never said what a preset does; the description is the
-    // whole reason a preset can publish metadata at all.
-    expect(screen.getByText(en.presetStandardDescription)).toBeTruthy()
-    // A preset that published none still reads as a row, with its id standing
-    // in for the name.
-    expect(screen.getByText(en.noDescription)).toBeTruthy()
-    expect(screen.getByText('mine')).toBeTruthy()
+    // The advanced preset lists with what it is for; the primary presets are
+    // the cards above, never rows inside the menu.
+    expect(screen.getByText('极简模式')).toBeTruthy()
+    expect(screen.getByText('双工具编码 agent。')).toBeTruthy()
+    expect(screen.queryByText(en.modeChatName)).toBeTruthy()
+    expect(screen.queryByText('Workspace Chat')).toBeNull()
   })
 
-  it('falls back to the id when the staged preset published no name', () => {
-    renderSeat({ current: 'mine' })
-
-    expect(screen.getByRole('button').textContent).toContain('mine')
-  })
-
-  it('shows the staged id until a stale roster contains it', () => {
-    renderSeat({ current: 'arriving' })
-
-    expect(screen.getByRole('button').textContent).toContain('arriving')
-  })
-
-  it('stages the picked preset and closes the menu', () => {
+  it('stages a preset picked from More', () => {
     const actions = renderSeat()
-    fireEvent.click(screen.getByRole('button'))
 
-    fireEvent.click(screen.getByText('mine'))
+    fireEvent.click(screen.getByRole('button', { name: en.modeMore }))
+    fireEvent.click(screen.getByText('极简模式'))
 
-    expect(actions.select).toHaveBeenCalledWith('mine')
-    expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('false')
+    expect(actions.select).toHaveBeenCalledWith('minimal')
   })
 
-  it('disables the trigger while a switch is in flight', () => {
+  it('names the staged advanced preset on the More trigger', () => {
+    renderSeat({ current: 'minimal' })
+
+    // The trigger names the staged pick so it stays legible after close.
+    expect(screen.getByRole('button', { name: /极简模式/ }).getAttribute('aria-haspopup')).toBe('menu')
+  })
+
+  it('renders a mode card only for presets the deployment supplies', () => {
+    renderSeat({ options: [
+      { id: CODE_MODE_PRESET_ID, trust: 'system', name: '标准模式', description: '完整的编码 agent。' },
+      { id: 'minimal', trust: 'user', name: '极简模式' },
+    ] })
+
+    // No workspace-chat in the roster: no Chat card, Code stays, More keeps
+    // the advanced preset reachable.
+    expect(screen.queryByRole('button', { name: new RegExp(en.modeChatName) })).toBeNull()
+    expect(screen.getByRole('button', { name: new RegExp(en.modeCodeName) })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: en.modeMore }))
+    expect(screen.getByText('极简模式')).toBeTruthy()
+  })
+
+  it('disables every control while a switch is in flight', () => {
     renderSeat({ busy: true })
 
-    expect(screen.getByRole('button')).toHaveProperty('disabled', true)
+    for (const button of screen.getAllByRole('button')) {
+      expect(button).toHaveProperty('disabled', true)
+    }
   })
 
-  it('shows a refused switch on the trigger', () => {
+  it('shows a refused switch on the controls', () => {
     renderSeat({ error: 'session has already started' })
 
-    expect(screen.getByRole('button').getAttribute('title')).toBe('session has already started')
+    for (const button of screen.getAllByRole('button')) {
+      expect(button.getAttribute('title')).toBe('session has already started')
+    }
   })
 
   it('renders nothing before the roster arrives or when there is none', () => {
-    const empty = renderSeat({ options: [] })
-    expect(empty).toBeTruthy()
+    renderSeat({ options: [] })
     expect(screen.queryByRole('button')).toBeNull()
     cleanup()
 
@@ -267,33 +308,46 @@ describe('the new-session chip', () => {
     expect(screen.queryByRole('button')).toBeNull()
   })
 
-  it('closes on an outside dismissal', () => {
+  it('closes More on an outside dismissal', () => {
     renderSeat()
-    fireEvent.click(screen.getByRole('button'))
+    fireEvent.click(screen.getByRole('button', { name: en.modeMore }))
 
     fireEvent.keyDown(document, { key: 'Escape' })
 
-    expect(screen.getByRole('button').getAttribute('aria-expanded')).toBe('false')
+    expect(screen.getByRole('button', { name: en.modeMore }).getAttribute('aria-expanded')).toBe('false')
   })
 })
 
-describe('the chip introduce cue', () => {
+describe('the More introduce cue', () => {
   afterEach(() => {
     vi.useRealTimers()
     vi.unstubAllGlobals()
   })
 
-  /** Character spans carry inline animation delays; nothing else does. */
-  function delayedChars(): HTMLElement[] {
-    return Array.from(screen.getByRole('button').querySelectorAll<HTMLElement>('[style]'))
+  /** The More trigger, by its menu role rather than its label (the label is
+      the staged preset's name while a pick is staged). */
+  function moreTrigger(): HTMLButtonElement {
+    const trigger = screen.getAllByRole('button')
+      .find(button => button.getAttribute('aria-haspopup') === 'menu')
+    if (trigger === undefined) throw new Error('More trigger not found')
+    return trigger as HTMLButtonElement
   }
 
-  it('reveals a long Latin name inside the shared window, then acknowledges', () => {
+  /** Character spans carry inline animation delays; nothing else does. */
+  function delayedChars(): HTMLElement[] {
+    return Array.from(moreTrigger().querySelectorAll<HTMLElement>('[style]'))
+  }
+
+  it('reveals a staged advanced name on the More trigger, then acknowledges', () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
     vi.useFakeTimers()
     const actions = renderSeat({
       current: 'creator',
-      options: [{ id: 'creator', trust: 'user', name: 'CreatorMode' }],
+      options: [
+        { id: CHAT_MODE_PRESET_ID, trust: 'user', name: 'Workspace Chat' },
+        { id: CODE_MODE_PRESET_ID, trust: 'system', name: '标准模式' },
+        { id: 'creator', trust: 'user', name: 'CreatorMode' },
+      ],
       introduce: true,
     })
 
@@ -319,7 +373,11 @@ describe('the chip introduce cue', () => {
     vi.useFakeTimers()
     renderSeat({
       current: 'creator',
-      options: [{ id: 'creator', trust: 'user', name: '创造模式' }],
+      options: [
+        { id: CHAT_MODE_PRESET_ID, trust: 'user', name: 'Workspace Chat' },
+        { id: CODE_MODE_PRESET_ID, trust: 'system', name: '标准模式' },
+        { id: 'creator', trust: 'user', name: '创造模式' },
+      ],
       introduce: true,
     })
 
@@ -335,7 +393,11 @@ describe('the chip introduce cue', () => {
     vi.useFakeTimers()
     const actions = renderSeat({
       current: 'creator',
-      options: [{ id: 'creator', trust: 'user', name: 'C' }],
+      options: [
+        { id: CHAT_MODE_PRESET_ID, trust: 'user', name: 'Workspace Chat' },
+        { id: CODE_MODE_PRESET_ID, trust: 'system', name: '标准模式' },
+        { id: 'creator', trust: 'user', name: 'C' },
+      ],
       introduce: true,
     })
 
@@ -346,8 +408,28 @@ describe('the chip introduce cue', () => {
 
   it('skips the run under reduced motion and acknowledges at once', () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })))
-    const actions = renderSeat({ introduce: true })
+    const actions = renderSeat({
+      current: 'creator',
+      options: [
+        { id: CHAT_MODE_PRESET_ID, trust: 'user', name: 'Workspace Chat' },
+        { id: CODE_MODE_PRESET_ID, trust: 'system', name: '标准模式' },
+        { id: 'creator', trust: 'user', name: '创造模式' },
+      ],
+      introduce: true,
+    })
 
+    expect(actions.introduced).toHaveBeenCalledTimes(1)
+    expect(delayedChars()).toHaveLength(0)
+  })
+
+  it('acknowledges at once when the staged pick is a primary mode card', () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
+    const actions = renderSeat({
+      current: CHAT_MODE_PRESET_ID,
+      introduce: true,
+    })
+
+    // The Chat card already shows the staged pick; no announcement is needed.
     expect(actions.introduced).toHaveBeenCalledTimes(1)
     expect(delayedChars()).toHaveLength(0)
   })
@@ -356,7 +438,11 @@ describe('the chip introduce cue', () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
     const actions = renderSeat({
       current: 'creator',
-      options: [{ id: 'creator', trust: 'user', name: '' }],
+      options: [
+        { id: CHAT_MODE_PRESET_ID, trust: 'user', name: 'Workspace Chat' },
+        { id: CODE_MODE_PRESET_ID, trust: 'system', name: '标准模式' },
+        { id: 'creator', trust: 'user', name: '' },
+      ],
       introduce: true,
     })
 
@@ -365,14 +451,31 @@ describe('the chip introduce cue', () => {
   })
 })
 
-describe('the session-header label', () => {
-  it('names the preset the session runs, and never offers a switch', async () => {
-    const { load } = renderLabel({ blank: false, agentPreset: 'standard' })
+describe('the session-header mode label', () => {
+  it('names the Code mode for a standard session, and never offers a switch', async () => {
+    const { load } = renderLabel({ blank: false, agentPreset: CODE_MODE_PRESET_ID })
 
     await waitFor(() => { expect(load).toHaveBeenCalledTimes(1) })
     // A control here would promise a switch the host refuses outright.
     expect(screen.queryByRole('button')).toBeNull()
-    expect(screen.getByTitle(en.presetStandardDescription).textContent).toBe(en.presetStandardName)
+    // `standard` is a shipped preset, so its description comes from the
+    // active locale rather than the roster row's file metadata.
+    expect(screen.getByTitle(en.presetStandardDescription).textContent).toBe(en.modeCodeName)
+  })
+
+  it('names the Chat mode for a workspace-chat session', async () => {
+    renderLabel({ blank: false, agentPreset: CHAT_MODE_PRESET_ID })
+
+    await waitFor(() => {
+      expect(screen.getByTitle('讨论与分析 workspace。').textContent).toBe(en.modeChatName)
+    })
+  })
+
+  it('falls back to the preset name for an advanced preset', async () => {
+    const { load } = renderLabel({ blank: false, agentPreset: 'minimal' })
+
+    await waitFor(() => { expect(load).toHaveBeenCalledTimes(1) })
+    expect(screen.getByTitle('双工具编码 agent。').textContent).toBe('极简模式')
   })
 
   it('falls back to the id, and to the generic hint, when metadata is absent', () => {
@@ -381,12 +484,13 @@ describe('the session-header label', () => {
     expect(screen.getByTitle(en.headerHint).textContent).toBe('mine')
   })
 
-  it('shows the id until the roster resolves it', () => {
-    renderLabel({ blank: false, agentPreset: 'standard' }, { options: [] })
+  it('names the mode from the session summary before the roster resolves it', () => {
+    renderLabel({ blank: false, agentPreset: CODE_MODE_PRESET_ID }, { options: [] })
 
     // The session's own summary is the authority on which preset it runs; the
-    // roster only supplies the display name, and its arrival is a later frame.
-    expect(screen.getByTitle(en.headerHint).textContent).toBe('standard')
+    // mode name comes from the locale, so a primary mode never shows its raw
+    // id even before the roster arrives — only the hint waits for it.
+    expect(screen.getByTitle(en.headerHint).textContent).toBe(en.modeCodeName)
   })
 
   it('renders nothing, and reads no roster, when the session records no preset', async () => {

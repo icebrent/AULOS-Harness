@@ -1,12 +1,10 @@
 - banner:
   - navigation "Session hierarchy":
     - button "Load the snapshot-skill skill with" [disabled]
+  - button "Show or hide the inspector"
   - button "Session log":
     - text: Session log
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
 - text: Load the snapshot-skill skill with the skill tool, then reply DONE. {{date}} {{clock}}
 - button "Copy":
   - img
@@ -18,6 +16,7 @@
   - img
   - img
   - text: Context injection skill-catalog
+- button "Completed · 1 tools" [expanded]
 - button "Think Load the requested skill.":
   - img
   - img
@@ -25,7 +24,7 @@
 - button "Skill snapshot-skill" [expanded]:
   - img
   - text: Skill snapshot-skill
-- region "Instructions": "Instructions <skill_content name=\"snapshot-skill\"> <skill_resources> Base directory for this skill: {{cwd}}/.dsh/skills/snapshot-skill Resolve relative paths mentioned by this skill against the base directory before using them. Load referenced resources only as needed. </skill_resources> <skill_instructions> Follow these snapshot-only instructions. Resolve referenced resources relative to this skill directory. </skill_instructions> </skill_content>"
+- region "Instructions": "Instructions <skill_content name=\"snapshot-skill\"> <skill_resources> Base directory for this skill: C:\\Users\\icebrent\\AppData\\Local\\Temp\\dsh-web-e2e-ws-MjZxbd/.dsh/skills/snapshot-skill Resolve relative paths mentioned by this skill against the base directory before using them. Load referenced resources only as needed. </skill_resources> <skill_instructions> Follow these snapshot-only instructions. Resolve referenced resources relative to this skill directory. </skill_instructions> </skill_content>"
 - button "Inspect"
 - button "Think The skill is loaded.":
   - img
@@ -49,4 +48,3 @@
   - text: DeepSeek-V4-Flash
   - img
 - button "Send message" [disabled]
-- text: 1 turns · 2 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 0% Input 280 tok · Output 30 tok

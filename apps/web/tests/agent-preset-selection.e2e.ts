@@ -1,13 +1,16 @@
 // Web e2e scenario: agent-preset selection. The roster's `roots` is an
 // assembly fact the CLI entry resolves and patches in, so every other lane
 // boots with an empty roster and no preset surface at all; this is the one
-// lane that mounts the SHIPPED presets and puts them in front of a browser.
+// lane that mounts the SHIPPED presets (plus a fixture workspace-chat) and
+// puts them in front of a browser.
 //
 // Two surfaces, one host rule: a session's composition is fixed when the
-// session starts. Before that, the new-session chip stages the choice beside
-// the workspace picker — the only screen where it still works. After it, the
-// session header names what the session runs and offers no control at all,
-// because the host answers `agent-preset-locked` to anything else.
+// session starts. Before that, the new-session screen offers two primary
+// modes — Chat (workspace-chat) and Code (standard) — plus a More menu with
+// every other preset; a pick stages beside the workspace picker, the only
+// screen where it still works. After it, the session header names what the
+// session runs and offers no control at all, because the host answers
+// `agent-preset-locked` to anything else.
 //
 // Zero model calls: no replay fixture mounts, so a stray stream fails loud.
 import { fileURLToPath } from 'node:url'
@@ -32,6 +35,8 @@ const MENU_EXPECTED = join(SNAPSHOT_DIR, 'menu.expected.md')
 const HEADER_EXPECTED = join(SNAPSHOT_DIR, 'header.expected.md')
 /** The shipped roster, beside the composition that names it. */
 const SHIPPED_PRESETS = fileURLToPath(new URL('../../cli/config/agent-presets', import.meta.url))
+/** The fixture workspace-chat preset the lane stages Chat against. */
+const FIXTURE_PRESETS = fileURLToPath(new URL('./fixtures/agent-presets', import.meta.url))
 const MODE = webSnapshotMode()
 const SEED_ID = 'agent-preset-selection-web-e2e'
 /** A project skill only a preset that mounts `skill-filesystem` can discover. */
@@ -173,7 +178,10 @@ describe('web e2e: agent-preset selection', () => {
 
   beforeAll(async () => {
     scaffold = await launchWebScaffold({
-      agentPresets: { roots: [{ path: SHIPPED_PRESETS, trust: 'system' }], default: 'standard' },
+      agentPresets: {
+        roots: [{ path: SHIPPED_PRESETS, trust: 'system' }, { path: FIXTURE_PRESETS, trust: 'user' }],
+        default: 'standard',
+      },
     })
     // A resumed session runs what it was created with; seeding one that
     // records `minimal` is what makes the header label a claim about the
@@ -193,49 +201,74 @@ describe('web e2e: agent-preset selection', () => {
     await scaffold?.close()
   })
 
-  it('offers the chip on the new-session screen, beside the workspace picker', async () => {
+  it('offers the two primary modes on the new-session screen, beside the workspace picker', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-hero'))
     await connectFreshWorkspace(page, scaffold.workspaceCwd)
 
-    const snapshot = await captureStableAria(page, '[class*="heroWorkspaceRow"]', scaffold.workspaceCwd)
+    const snapshot = await captureStableAria(page, '[class*="heroPickerRows"]', scaffold.workspaceCwd)
 
     await compareOrRefreshGolden(HERO_EXPECTED, snapshot, MODE)
-    // The chip opens on the deployment default, by the name that preset
-    // publishes rather than its directory name.
-    expect(snapshot).toContain('Standard mode')
+    // The picker row and the mode row render as one choice group: the
+    // workspace chip, both primary mode cards, and the More trigger.
+    expect(snapshot).toContain('Chat')
+    expect(snapshot).toContain('Code')
+    expect(snapshot).toContain('button "More"')
   })
 
-  it('names every preset and what it is for', async () => {
+  it('keeps every other preset behind More, each with what it is for', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-menu'))
-    await page.getByRole('button', { name: 'Standard mode' }).click()
+    await page.getByRole('button', { name: 'More' }).click()
     const menu = page.getByRole('menu')
     await menu.waitFor({ timeout: 10_000 })
 
     const snapshot = await captureStableAria(page, '[role="menu"]', scaffold.workspaceCwd)
 
     await compareOrRefreshGolden(MENU_EXPECTED, snapshot, MODE)
-    // Every shipped preset, each with the sentence saying what it composes —
+    // The advanced roster, each with the sentence saying what it composes —
     // the id alone never said what a preset does.
+    expect(snapshot).toContain('Code mode')
     expect(snapshot).toContain('Minimal mode')
     expect(snapshot).toContain('Creator mode')
+    // The two primary presets are the cards, not menu rows: no row names one
+    // (descriptions may still mention the capability set).
+    expect(snapshot.split('\n').some(line => /^  - menuitem "Standard mode/.test(line))).toBe(false)
     await page.keyboard.press('Escape')
   })
 
-  it('applies the staged pick to the blank session, and the host honors it', async () => {
+  it('stages Chat from the Chat card, and the host honors the workspace-chat preset', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-chat-stage'))
+    await page.getByRole('button', { name: /^Chat/ }).click()
+
+    // The card stages; the blank session the workspace connect produced is
+    // what the stage lands on. The host's own answer is what comes back.
+    await expect.poll(() => livePreset(scaffold.baseUrl), { timeout: 15_000 }).toBe('workspace-chat')
+  })
+
+  it('stages an advanced preset from More, and the host honors it', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-stage'))
-    await page.getByRole('button', { name: 'Standard mode' }).click()
+    await page.getByRole('button', { name: 'More' }).click()
     await page.getByRole('menuitem', { name: /Minimal mode/ }).click()
 
-    // The chip stages; the blank session the workspace connect produced is
-    // what the stage lands on. The host's own answer is what comes back.
     await expect.poll(() => livePreset(scaffold.baseUrl), { timeout: 15_000 }).toBe('minimal')
   })
 
+  it('restores Code mode from the Code card, and the host honors standard', async () => {
+    onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-code-restore'))
+    await page.getByRole('button', { name: /^Code/ }).click()
+
+    await expect.poll(() => livePreset(scaffold.baseUrl), { timeout: 15_000 }).toBe('standard')
+  })
+
   it('re-reads the slash catalog through the composition the switch installed', async () => {
-    // Continues the previous case: the chip has already applied `minimal` to
-    // the blank session, and this one reads the menu that switch left behind.
+    // Continues the previous case: the mode cards have already applied
+    // `standard` to the blank session, and this one reads the menu that
+    // switch left behind.
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-slash-catalog'))
     const composer = page.locator('textarea:enabled').last()
+
+    await page.getByRole('button', { name: 'More' }).click()
+    await page.getByRole('menuitem', { name: /Minimal mode/ }).click()
+    await expect.poll(() => livePreset(scaffold.baseUrl), { timeout: 15_000 }).toBe('minimal')
 
     // `minimal` mounts neither the compaction group nor plan mode nor local
     // skill discovery, so the catalog the composer warmed under the
@@ -252,12 +285,11 @@ describe('web e2e: agent-preset selection', () => {
     expect(onMinimal.some(option => option.startsWith('model'))).toBe(true)
     await composer.fill('')
 
-    // Switching back up reaches the host at all — the chip compares the pick
-    // against its list row, so a row that never reprojected the first switch
+    // Switching back up reaches the host at all — the seat compares the pick
+    // against its roster row, so a row that never reprojected the first switch
     // answers "already standard" and sends nothing — and restores the catalog
     // instead of leaving the session reading the narrower composition.
-    await page.getByRole('button', { name: 'Minimal mode' }).click()
-    await page.getByRole('menuitem', { name: /^Standard mode/ }).first().click()
+    await page.getByRole('button', { name: /^Code/ }).click()
     await expect.poll(() => livePreset(scaffold.baseUrl), { timeout: 15_000 }).toBe('standard')
 
     await composer.fill('/')
@@ -269,7 +301,7 @@ describe('web e2e: agent-preset selection', () => {
     await composer.fill('')
   }, 90_000)
 
-  it('labels a resumed session with the preset it was created under', async () => {
+  it('labels a resumed session with the mode it was created under', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-header'))
     // The seeded session's cwd is the scaffold root rather than the connected
     // workspace, so it lists under Ungrouped; the group collapses by default.

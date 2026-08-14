@@ -701,13 +701,16 @@ export function fixtureUserPrompts(fixtureText: string): string[] {
  * @returns the realized fixture text.
  */
 export function realizeSeedFixture(scaffold: WebScaffold, fixtureText: string, id: string): string {
+  // The token sits inside JSON strings, so the Windows path must go in
+  // JSON-escaped: a raw `C:\...` would make every seeded line unparseable.
+  const escaped = scaffold.workspaceCwd.replace(/\\/g, '\\\\')
   const realized = fixtureText
     .split('{{sessionId}}').join(id)
-    .split('{{cwd}}').join(scaffold.workspaceCwd)
+    .split('{{cwd}}').join(escaped)
   const fixtureCwd = (JSON.parse(realized.split('\n', 1)[0]!) as { cwd?: string }).cwd
   return fixtureCwd === undefined
     ? realized
-    : realized.split(fixtureCwd).join(scaffold.workspaceCwd)
+    : realized.split(fixtureCwd).join(escaped)
 }
 
 export async function seedSession(
@@ -873,6 +876,38 @@ export async function assertFixtureInventory(dir: string, expected: string[]): P
     expect(content, `${dir}/${entry} carries a run-local rpcId`)
       .not.toMatch(/"rpcId":"(?!\{\{rpcId\}\})[^"]+"/)
   }
+}
+
+/**
+ * Open the full trajectory through the v2 path: the inspector's Activity tab
+ * and its "Open full trajectory" button (the Chat | Trajectory tab ring is
+ * gone). The trajectory timeline label is the ready barrier.
+ * @param page - the page under test.
+ */
+export async function openFullTrajectory(page: Page): Promise<void> {
+  const tab = page.getByRole('tab', { name: 'Activity', exact: true })
+  try {
+    await tab.click({ timeout: 10_000 })
+  } catch {
+    // The header's pointer hit-test can cover the tab's sampled click point
+    // in overflowing layouts; keyboard activation is the same control path a
+    // keyboard user takes.
+    await tab.focus()
+    await page.keyboard.press('Enter')
+  }
+  await page.getByRole('button', { name: 'Open full trajectory' }).click()
+  await page.getByLabel('Trajectory timeline').waitFor({ timeout: 30_000 })
+}
+
+/**
+ * Return from the full-trajectory view through its slim back bar and wait for
+ * the conversation flow to mount again.
+ * @param page - the page under test.
+ */
+export async function backToConversation(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Back to conversation', exact: true }).click()
+  await page.locator('[data-conversation-scroll] [data-chat-anchor-key]').first()
+    .waitFor({ timeout: 30_000 })
 }
 
 /**

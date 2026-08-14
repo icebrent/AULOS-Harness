@@ -77,7 +77,11 @@ describe.skipIf(MODE === 'record' || !HAS_PWSH)('web e2e: pwsh calls use the bas
     const result = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem')
     await expect.poll(() => result.count(), { timeout: 15_000 }).toBe(1)
     await result.click()
-    await page.getByRole('tab', { name: 'Chat', exact: true }).waitFor({ timeout: 15_000 })
+    await page.locator('[data-conversation-scroll] [data-chat-anchor-key]').first().waitFor({ timeout: 15_000 })
+    // The settled turn folds its tool activity; expand the fold to reach the row.
+    const fold = page.getByRole('button', { name: /Completed · \d+ tools/ }).first()
+    await fold.waitFor({ timeout: 15_000 })
+    await fold.click()
     // The tool row is expand-gated: the settled row uses the bash layout and carries the
     // shell-family variant, and the terminal card lives in the expanded body.
     const row = page.locator('[data-tool="pwsh"]').first()

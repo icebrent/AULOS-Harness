@@ -41,6 +41,15 @@ it('boots the built plugin graph and renders a fixture session end to end', asyn
   // Opening a session reaches chat content through the fixture transport.
   fireEvent.click(waitingTitle)
   await waitFor(() => {
+    // The v2 presentation folds settled tool activity; expand every fold so
+    // the raw rows the rest of this boot contract asserts are mounted.
+    const folds = [...document.querySelectorAll<HTMLElement>('button')]
+      .filter(el => el.getAttribute('aria-expanded') === 'false'
+        && /(?:Completed|已完成) · \d+ (?:tools|个工具)/.test(el.textContent ?? ''))
+    if (folds.length === 0) throw new Error('no settled activity folds mounted yet')
+    for (const fold of folds) fireEvent.click(fold)
+  }, { timeout: 10_000 })
+  await waitFor(() => {
     expect(document.querySelector('[data-sample="bash"]')).not.toBeNull()
   }, { timeout: 10_000 })
   // Resolve the resident approval so the ordinary composer bar (which owns

@@ -104,8 +104,8 @@ describe('apply wiring', () => {
     // one search row registers under both grep and glob; the web rows register
     // one component under both web tool names.
     expect(b.slots.entries('conversation.chat.node').map(entry => entry.options.key)).not.toContain('tool-call')
-    // Stats stick with the composer (not inside ChatView).
-    expect(b.slots.entries('conversation.composer.dock').map(e => e.options.id)).toEqual(['stats'])
+    // Stats moved to the right inspector; the composer dock keeps no stats row.
+    expect(b.slots.entries('conversation.composer.dock').map(e => e.options.id)).toEqual([])
     await b.runtime.dispose()
   })
 

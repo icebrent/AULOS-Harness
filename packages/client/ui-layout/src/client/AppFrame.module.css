@@ -4,7 +4,8 @@
   grid-template-rows: 100%;
   height: 100%;
   overflow: hidden;
-  background: var(--dsw-alias-bg-base);
+  /* Warm off-white page behind the three content columns. */
+  background: var(--dsw-alias-page-bg);
   /* Collapse/expand animates the tracks on the deepsuite sider curve
      (--ds-ease-in-out / --ds-transition-duration-slow, ui-theme base.css). */
   transition: grid-template-columns var(--ds-transition-duration-slow) var(--ds-ease-in-out);
@@ -26,7 +27,7 @@
   min-width: 0;
   overflow: hidden;
   background: var(--dsw-specific-sidebar-fill);
-  border-right: 1px solid var(--dsw-alias-border-l1);
+  border-right: 1px solid var(--dsw-alias-border-soft);
 }
 
 .centerCol {
@@ -34,12 +35,18 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* The conversation is the visual main: a white surface floated on the
+     page with a hairline and a soft shadow. */
+  background: var(--dsw-alias-surface);
+  border-right: 1px solid var(--dsw-alias-border-soft);
+  box-shadow: var(--dsw-alias-shadow-soft);
 }
 
 .detailsCol {
   min-width: 0;
   overflow: hidden;
-  border-left: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-surface-tint);
+  border-left: 1px solid var(--dsw-alias-border-soft);
 }
 
 /* The details subtree stays mounted at zero width, so its border must not paint

@@ -26,6 +26,7 @@ import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
 import { REPO_ROOT, connectFreshWorkspace, newEnglishPage, probeFreePort, requireDist, saveFailureShot } from './support.ts'
+import { backToConversation, openFullTrajectory } from './scaffold.ts'
 
 const WEB_SURFACE_PROMPT = fileURLToPath(new URL('./snapshots/web-runtime-context/web-surface-prompt.expected.md', import.meta.url))
 
@@ -577,32 +578,37 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY || notReady.length > 0)('web smoke
     await screen(page, '04-round-complete')
   }, 150_000)
 
-  it('view tabs: Chat and Trajectory switch', async () => {
+  it('trajectory opens from the Activity panel and the back bar returns to chat', async () => {
     onTestFailed(() => saveFailureShot(page, 'w5-tabs'))
-    await page.locator('button', { hasText: /Trajectory/i }).first().click()
+    await openFullTrajectory(page)
     await screen(page, '05-trajectory-tab')
-    await page.getByLabel('Trajectory timeline').waitFor()
     await expect.poll(() => page.getByRole('tab', { name: 'Waterfall' }).count()).toBe(0)
-    await page.locator('button', { hasText: /^Chat$/i }).first().click()
+    await backToConversation(page)
     await screen(page, '07-back-to-chat')
   })
 
-  it('bash differential rendering: tool row click leaves the default details column closed', async () => {
+  it('bash differential rendering: the settled fold reveals the tool row and its click keeps the inspector column', async () => {
     onTestFailed(() => saveFailureShot(page, 'w5-tool-details'))
     const input = page.locator('textarea').first()
     await input.fill('请用 bash 工具运行命令 echo w5marker 然后告诉我结果')
     await input.press('Enter')
-    // Wait for the tool ROW, not response text (the reply echoes any marker).
+    // The settled turn folds its tool activity; expand the fold, then wait
+    // for the tool ROW, not response text (the reply echoes any marker).
     // Bash renders through the third-party sample registration. Match that
     // exact row: other clickable variants (for example Think disclosure)
     // may precede the tool call in document order.
+    const fold = page.getByRole('button', { name: /Completed · \d+ tools/ }).first()
+    await fold.waitFor({ timeout: 120_000 })
+    await fold.click()
     const toolRow = page.locator('[data-sample="bash"]')
     await toolRow.waitFor({ timeout: 120_000 })
     await screen(page, '08-bash-round')
-    expect(await detailsTrack(page)).toBe(0)
+    // The v2 inspector column is open by default and tool-row clicks show the
+    // embedded details inside it without changing its track.
+    const before = await detailsTrack(page)
+    expect(before).toBeGreaterThan(0)
     await toolRow.click()
-    // Tool rows do not drive layout.openDetails; the default column stays closed.
-    expect(await detailsTrack(page)).toBe(0)
+    expect(await detailsTrack(page)).toBe(before)
     await screen(page, '09-details-closed')
   }, 150_000)
 

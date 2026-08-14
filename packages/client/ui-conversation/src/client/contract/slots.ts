@@ -138,9 +138,10 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      */
     'conversation.hero.workspace': { kind: 'single'; scope: 'root'; owner: EmptyWorkspaceOwnerProps }
     /**
-     * The agent-preset chip beside the workspace picker on the new-session
-     * screen. Root scope: no session exists yet, so the choice is staged for
-     * the next one rather than applied to a current one.
+     * The mode selector under the workspace picker on the new-session
+     * screen: two primary entries (Chat / Code) plus a More menu for every
+     * other preset. Root scope: no session exists yet, so the choice is
+     * staged for the next one rather than applied to a current one.
      */
     'conversation.hero.agentPreset': { kind: 'single'; scope: 'root'; owner: HeroAgentPresetOwnerProps }
     // 'conversation.input.overlay' merges in ui-input-trigger (the dependency
@@ -240,9 +241,9 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
   }
 }
 
-/** Owner share of the hero agent-preset chip: the shell supplies nothing. */
+/** Owner share of the hero mode selector: the shell supplies nothing. */
 export interface HeroAgentPresetOwnerProps {
-  /** Marker field: the chip owns its own roster, staging, and menu state. */
+  /** Marker field: the selector owns its own roster, staging, and menu state. */
   children?: never
 }
 
@@ -448,6 +449,8 @@ export interface ConversationSessionHeaderInjected {
   }
   /** Select a real Session through the runtime navigation owner. */
   open: (sessionId: SessionId) => void
+  /** Toggle the right inspector column (context/activity panel). */
+  toggleInspector: () => void
 }
 
 /**
@@ -585,6 +588,7 @@ export type ConversationSessionSlotProps =
   & PropsRenderSlots<'conversation.view'>
   & PropsStore<ChatStore>
   & ConversationSessionInjected
+  & PropsLocale<'conversation'>
 
 /** Full strict-session header props: shared store, tabs/actions render shares, navigation, and locale. */
 export type ConversationSessionHeaderSlotProps =

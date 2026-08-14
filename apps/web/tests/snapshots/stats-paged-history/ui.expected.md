@@ -1,12 +1,10 @@
 - banner:
   - navigation "Session hierarchy":
-    - button "{{workspace}}" [disabled]
+    - button "dsh-web-e2e-ws-eXNSxc" [disabled]
+  - button "Show or hide the inspector"
   - button "Session log":
     - text: Session log
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
 - text: m1 7/25 {{clock}}
 - button "Copy":
   - img
@@ -354,4 +352,3 @@
   - text: DeepSeek-V4-Flash
   - img
 - button "Send message" [disabled]
-- text: 28 turns · 28 steps LLM {{duration}}

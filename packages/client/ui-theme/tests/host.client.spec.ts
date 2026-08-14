@@ -42,15 +42,15 @@ describe('ui-theme host', () => {
     } as WebServer)
     const fiber = ctx.plugin({ apply })
     await fiber.await()
-    expect(transform?.('<body></body>')).toContain('const preference = "system"')
+    expect(transform?.('<body></body>')).toContain('const preference = "light"')
     await ctx.settings.update(settingsNamespace(THEME_SETTINGS_NAMESPACE), { preference: 'dark' })
     expect(transform?.('<body></body>')).toContain('const preference = "dark"')
     await fiber.dispose()
     expect(disposed).toBe(true)
-    expect(transform?.('<body></body>')).toContain('const preference = "system"')
+    expect(transform?.('<body></body>')).toContain('const preference = "light"')
   })
 
-  it('uses the system preference when only an HTTP server exists', async () => {
+  it('uses the default light preference when only an HTTP server exists', async () => {
     const ctx = new Context()
     let transform: ((html: string) => string) | undefined
     ctx.provide('webServer', {
@@ -60,6 +60,6 @@ describe('ui-theme host', () => {
       },
     } as WebServer)
     await ctx.plugin({ apply }).await()
-    expect(transform?.('<body></body>')).toContain('const preference = "system"')
+    expect(transform?.('<body></body>')).toContain('const preference = "light"')
   })
 })

@@ -55,12 +55,15 @@ function equalBreadcrumbs(left: readonly Breadcrumb[], right: readonly Breadcrum
 
 /**
  * Renders Session header chrome above the resident conversation scrollport.
+ * Quiet by design: title, the mode label, and secondary utilities only — the
+ * runtime stats moved to the right inspector, and the view tabs dissolved
+ * into the Activity panel's trajectory entry.
  * @param props - Strict Session store, view ledger, navigation, render, and locale shares.
- * @returns the hidden blank-session header or visible title and tabs.
+ * @returns the hidden blank-session header or visible title and utilities.
  */
 export function ConversationSessionHeader({
-  sessionId, useSession, useSessions, useStore, actions,
-  renderSlot, views, open, t,
+  sessionId, useSession, useSessions, useStore,
+  renderSlot, views, open, toggleInspector, t,
 }: ConversationSessionHeaderProps) {
   useSyncExternalStore(views.subscribe, views.version)
   const tabs = views.list()
@@ -70,6 +73,7 @@ export function ConversationSessionHeader({
   const composerPhase = useSession(s => s.composerPhase)
   const blank = useSession(s => s.blank)
   const hideChrome = blank && composerPhase === 'blank'
+  const inTrajectory = active?.id === 'trajectory'
 
   return (
     <header
@@ -77,53 +81,50 @@ export function ConversationSessionHeader({
       aria-hidden={hideChrome || undefined}
     >
       {!hideChrome && (
-        <>
-          <div className={css.titleRow}>
-            <div className={css.titleCluster}>
-              <nav className={css.crumbs} aria-label={t('session.hierarchy')}>
-                {ancestry.map((summary, index) => {
-                  const last = index === ancestry.length - 1
-                  return (
-                    <span key={summary.id} className={css.crumbSeg}>
-                      {index > 0 && <span className={css.crumbSep}>/</span>}
-                      <button
-                        type="button"
-                        className={clsx(css.crumb, last && css.crumbCurrent)}
-                        disabled={last}
-                        onClick={() => { open(summary.id) }}
-                      >
-                        {summary.displayTitle}
-                      </button>
-                    </span>
-                  )
-                })}
-                {ancestry.length === 0 && <span className={css.crumbCurrent}>{sessionId}</span>}
-              </nav>
-              <div className={css.headerActions}>
-                {renderSlot('conversation.session.header.actions', {})}
-              </div>
-            </div>
-            <div className={css.headerUtilities}>
-              {renderSlot('conversation.session.header.utilities', {})}
+        <div className={css.titleRow}>
+          <div className={css.titleCluster}>
+            <nav className={css.crumbs} aria-label={t('session.hierarchy')}>
+              {ancestry.map((summary, index) => {
+                const last = index === ancestry.length - 1
+                return (
+                  <span key={summary.id} className={css.crumbSeg}>
+                    {index > 0 && <span className={css.crumbSep}>/</span>}
+                    <button
+                      type="button"
+                      className={clsx(css.crumb, last && css.crumbCurrent)}
+                      disabled={last}
+                      onClick={() => { open(summary.id) }}
+                    >
+                      {summary.displayTitle}
+                    </button>
+                  </span>
+                )
+              })}
+              {ancestry.length === 0 && <span className={css.crumbCurrent}>{sessionId}</span>}
+              {inTrajectory && <span className={css.viewBadge}>{t('session.inTrajectory')}</span>}
+            </nav>
+            <div className={css.headerActions}>
+              {renderSlot('conversation.session.header.actions', {})}
             </div>
           </div>
-          {tabs.length > 1 && (
-            <div className={css.tabs} role="tablist">
-              {tabs.map(viewTab => (
-                <button
-                  key={viewTab.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={viewTab.id === active?.id}
-                  className={clsx(css.tab, viewTab.id === active?.id && css.tabActive)}
-                  onClick={() => { actions.setView(viewTab.id) }}
-                >
-                  {viewTab.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
+          <div className={css.headerUtilities}>
+            <button
+              type="button"
+              className={css.inspectorToggle}
+              aria-label={t('session.toggleInspector')}
+              title={t('session.toggleInspector')}
+              onClick={() => { toggleInspector() }}
+            >
+              <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden>
+                <path
+                  d="M3.5 2.5h9a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1h-9a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Zm4.5 0v11"
+                  stroke="currentColor" strokeWidth="1.3" fill="none" strokeLinecap="round"
+                />
+              </svg>
+            </button>
+            {renderSlot('conversation.session.header.utilities', {})}
+          </div>
+        </div>
       )}
     </header>
   )
@@ -131,13 +132,15 @@ export function ConversationSessionHeader({
 
 /**
  * Renders the active Session view inside the resident scrollport and keeps
- * the input draft mirrored while blank Hero chrome is visible.
+ * the input draft mirrored while blank Hero chrome is visible. While a
+ * non-chat view (the full trajectory) is active, a slim back bar restores
+ * the conversation — the only path the view ring is switched by now.
  * @param props - Strict Session input/store, view ledger, and render shares.
  * @returns the active view area, or null while the Session remains blank.
  */
 export function ConversationSession({
   sessionId, useSession, useInput, inputActions, useStore, actions,
-  renderSlot, views, bindDraftMirror, releaseSessionImages,
+  renderSlot, views, bindDraftMirror, releaseSessionImages, t,
 }: ConversationSessionProps) {
   useSyncExternalStore(views.subscribe, views.version)
   const tabs = views.list()
@@ -163,8 +166,23 @@ export function ConversationSession({
   }, [releaseSessionImages, sessionId])
 
   if (blank && composerPhase === 'blank') return null
+  const inTrajectory = active?.id === 'trajectory'
   return (
     <div className={css.viewArea}>
+      {inTrajectory && (
+        <div className={css.viewBackBar}>
+          <button
+            type="button"
+            className={css.viewBack}
+            onClick={() => { actions.setView(DEFAULT_VIEW_ID) }}
+          >
+            <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden>
+              <path d="M10 3.5 5.5 8 10 12.5" stroke="currentColor" strokeWidth="1.6" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span>{t('session.backToChat')}</span>
+          </button>
+        </div>
+      )}
       {active !== undefined && renderSlot('conversation.view', {
         inspect,
         onInspectDone: () => { actions.setInspect(null) },

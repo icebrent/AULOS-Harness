@@ -1,2 +1,2 @@
 - tree "Search results":
-  - 'treeitem "{{workspace}} {{workspace}} ## Navigation Summary - alpha nav - beta nav ``` echo WATERFALL ```"'
+  - 'treeitem "dsh-web-e2e-ws-yy9Rxa dsh-web-e2e-ws-yy9Rxa ## Navigation Summary - alpha nav - beta nav ``` echo WATERFALL ```"'

@@ -119,7 +119,24 @@ export function ConversationRoot({
         },
         onClose: () => { setPickerOpen(false) },
       })}
+    </div>
+  )
+
+  // The mode selector gets its own row under the workspace picker: two
+  // primary entries (Chat / Code) plus the More menu need more width than the
+  // picker row affords, and the two rows read as one choice group.
+  const heroModeRow = (
+    <div className={css.heroModeRow}>
       {renderSlot('conversation.hero.agentPreset', {})}
+    </div>
+  )
+
+  // One region for the whole choice group, so the picker and the modes stay
+  // visually tied and tests snapshot them together.
+  const heroPickerRows = (
+    <div className={css.heroPickerRows}>
+      {heroWorkspaceRow}
+      {heroModeRow}
     </div>
   )
 
@@ -160,7 +177,7 @@ export function ConversationRoot({
     <div className={clsx(css.composerStack, hero && css.composerHero)}>
       {hero && <HeroGlow className={css.heroGlow} />}
       {hero && <HeroShell t={t} />}
-      {hero && heroWorkspaceRow}
+      {hero && heroPickerRows}
       {zone !== undefined && renderSlot('conversation.input.dock', zone)}
       {inputBar}
     </div>

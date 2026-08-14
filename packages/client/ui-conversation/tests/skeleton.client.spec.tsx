@@ -160,6 +160,7 @@ function mount(
           renderSlot={renderSlot as never}
           views={views}
           open={open}
+          toggleInspector={vi.fn()}
           t={t}
         />
       )
@@ -181,6 +182,7 @@ function mount(
           views={views}
           releaseSessionImages={vi.fn()}
           bindDraftMirror={write => wiring.bindMirror(write)}
+          t={t}
         />
       )
     }
@@ -456,8 +458,9 @@ describe('ConversationRoot resident composer', () => {
 
     expect(b.view.getByTestId('view-chat')).toBeTruthy()
     expect(b.view.queryByTestId('view-new-view')).toBeNull()
-    expect(b.view.getByRole('tab', { name: 'Chat' }).getAttribute('aria-selected')).toBe('true')
-    expect(b.view.getByRole('tab', { name: 'New view' }).getAttribute('aria-selected')).toBe('false')
+    // No tab ring in the quiet header; the fallback is the rendered view.
+    expect(b.view.queryByRole('tab')).toBeNull()
+    expect(b.view.getByTestId('view-chat')).toBeTruthy()
   })
 
   it('rolls the pending workspace label back when switching fails', async () => {

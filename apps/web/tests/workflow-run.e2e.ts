@@ -145,6 +145,12 @@ describe.skipIf(MODE === 'record')('web e2e: durable workflow run in Chat', () =
     await settled
     await page.locator('[data-workflow-run][data-run-status="completed"]').waitFor()
 
+    // The settled turn folds the workflow's tool call; expand it so the raw
+    // tool row participates in the flow-kind counts below.
+    const fold = page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false }).first()
+    await fold.waitFor({ timeout: 10_000 })
+    await fold.click()
+
     expect(await page.locator('[data-chat-flow-kind="tool-call"]').count()).toBeGreaterThanOrEqual(1)
     expect(await page.locator('[data-chat-flow-kind="workflow-run"]').count()).toBe(1)
     const terminalWorkflow = page.getByRole('button', { name: /^snapshot-flow/ })

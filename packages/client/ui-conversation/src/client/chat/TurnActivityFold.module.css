@@ -1,0 +1,157 @@
+/* Folded tool activity: a quiet summary row replacing the raw tool/intermediate
+   steps of a completed turn, and a compact live block while the turn runs. */
+
+.fold {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Summary row: hairline card with a state accent, expandable. */
+.summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 6px 12px;
+  border: 1px solid var(--dsw-alias-border-soft);
+  border-radius: 999px;
+  background: var(--dsw-alias-surface);
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+
+.summary:hover {
+  border-color: var(--dsw-alias-border-l3);
+  background: var(--dsw-alias-surface-raised);
+}
+
+.summaryError {
+  border-color: var(--dsw-alias-state-error-secondary);
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.check {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--dsw-alias-state-success-tertiary);
+  color: var(--dsw-alias-state-success-primary);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.checkError {
+  background: var(--dsw-alias-state-error-secondary);
+  color: var(--dsw-alias-label-primary-foreground);
+}
+
+.summaryText {
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  flex: none;
+  color: var(--dsw-alias-label-caption);
+}
+
+/* Expanded / error rows: the raw flow rows, reflowed. */
+.rows,
+.errorRows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Live block: pulsing state dot, "Working…", the most recent tool names. */
+.live {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--dsw-alias-border-soft);
+  border-radius: var(--dsw-alias-radius-md);
+  background: var(--dsw-alias-surface);
+  max-width: 100%;
+}
+
+.liveDot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dsw-alias-state-business-primary);
+  animation: live-pulse 1.4s var(--ds-ease-in-out) infinite;
+}
+
+@keyframes live-pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveDot {
+    animation: none;
+  }
+}
+
+.liveLabel {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.liveNames {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.liveName {
+  flex: none;
+  max-width: 140px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--dsw-alias-surface-tint);
+  border: 1px solid var(--dsw-alias-border-faint);
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.liveCount {
+  flex: none;
+  margin-left: auto;
+  font-size: 11px;
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-caption);
+}

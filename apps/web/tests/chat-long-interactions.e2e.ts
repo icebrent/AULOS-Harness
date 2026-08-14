@@ -193,13 +193,27 @@ describe('web e2e: long Chat interaction contract', () => {
     if (boundary === undefined) throw new Error(`turn ${String(BRANCH_TURN)} has no turn/end event`)
     const expectedUserText = textContent(branchUserEvent.data.content)
 
-    await wheelUntilMounted(page, `[data-chat-call-id="${TARGET_CALL_2}"]`, -1_100)
+    const call1 = page.locator(`[data-chat-call-id="${TARGET_CALL_1}"]`)
+    const call2 = page.locator(`[data-chat-call-id="${TARGET_CALL_2}"]`)
+    // Folded tool rows are invisible to scroll-based mounting: page the whole
+    // history, expanding each fold as its page mounts, until the semantic
+    // target rows exist.
+    for (let guard = 0; guard < 20; guard += 1) {
+      if (await call1.count() === 1 && await call2.count() === 1) break
+      const loadEarlier = page.getByRole('button', { name: 'Load earlier' })
+      if (await loadEarlier.count() === 0) {
+        throw new Error('history never paged far enough to mount the semantic tool rows')
+      }
+      await loadEarlier.click()
+      const collapsedFolds = page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false })
+      while (await collapsedFolds.count() > 0) {
+        await collapsedFolds.first().click()
+      }
+    }
     const toolUserKey = messageKey(toolUserEvent)
     const toolAssistantKey = assistantKey(toolAssistantEvent)
     const toolUserRow = page.locator(`[data-chat-anchor-key="${toolUserKey}"]`)
     const toolAssistantRow = page.locator(`[data-chat-anchor-key="${toolAssistantKey}"]`)
-    const call1 = page.locator(`[data-chat-call-id="${TARGET_CALL_1}"]`)
-    const call2 = page.locator(`[data-chat-call-id="${TARGET_CALL_2}"]`)
 
     await expect.poll(() => toolUserRow.count(), { timeout: 10_000 }).toBe(1)
     await expect.poll(() => toolAssistantRow.count(), { timeout: 10_000 }).toBe(1)

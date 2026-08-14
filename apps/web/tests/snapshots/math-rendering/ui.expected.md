@@ -1,12 +1,10 @@
 - banner:
   - navigation "Session hierarchy":
     - button "Math rendering" [disabled]
+  - button "Show or hide the inspector"
   - button "Session log":
     - text: Session log
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
 - text: Render this mathematical proof. {{clock}}
 - button "Copy":
   - img
@@ -48,4 +46,3 @@
   - text: DeepSeek-V4-Flash
   - img
 - button "Send message" [disabled]
-- text: 1 turns · 1 steps LLM {{duration}}

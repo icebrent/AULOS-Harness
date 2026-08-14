@@ -1,0 +1,9 @@
+# E2e fixture: a minimal workspace-chat preset so the browser lane can stage
+# the Chat mode against a real roster row. Health check is shape-only; this
+# one-row composition mounts the persona plugin, which apps/cli depends on.
+- id: persona
+  name: '@deepseek-ai/dsh-persona'
+  config:
+    text: >-
+      You are the e2e fixture Workspace Chat. You have no tools that modify
+      the workspace; you discuss, analyze, and explain.

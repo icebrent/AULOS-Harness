@@ -1,3 +1,4 @@
+- button "Back to conversation"
 - toolbar "Trajectory toolbar":
   - button "Use actual duration": Duration
   - button "Collapse turns": Turns
@@ -24,10 +25,10 @@
       - 'cell "bash{\"command\": \"echo NAVIGATION_OK\", \"description\": \"Print NAVIGATION_OK\"} → NAVIGATION_OK"'
     - 'row "TOOL, read {\"file_path\": \"nav-a.md\"}"':
       - cell "TOOL"
-      - 'cell "read{\"file_path\": \"nav-a.md\"} → <path>{{cwd}}/nav-a.md</path> <type>file</type> <content> 1: # alpha nav (End of file - total 1 lines) </content>"'
+      - 'cell "read{\"file_path\": \"nav-a.md\"} → <path>C:\\Users\\icebrent\\AppData\\Local\\Temp\\dsh-web-e2e-ws-yy9Rxa/workspace/nav-a.md</path> <type>file</type> <content> 1: # alpha nav (End of file - total 1 lines) </content>"'
     - 'row "TOOL, read {\"file_path\": \"nav-b.md\"}"':
       - cell "TOOL"
-      - 'cell "read{\"file_path\": \"nav-b.md\"} → <path>{{cwd}}/nav-b.md</path> <type>file</type> <content> 1: # beta nav (End of file - total 1 lines) </content>"'
+      - 'cell "read{\"file_path\": \"nav-b.md\"} → <path>C:\\Users\\icebrent\\AppData\\Local\\Temp\\dsh-web-e2e-ws-yy9Rxa/workspace/nav-b.md</path> <type>file</type> <content> 1: # beta nav (End of file - total 1 lines) </content>"'
     - row "Request 2, ASSISTANT, FIRST_DONE":
       - 'cell "Request #2 ASSISTANT"':
         - 'button "Request #2"'

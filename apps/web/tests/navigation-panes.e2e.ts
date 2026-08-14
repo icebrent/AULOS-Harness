@@ -17,7 +17,8 @@ import { parseSessionLog } from '@deepseek-ai/dsh-llm-replay'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import {
   assertFixtureInventory, captureStableAria, compareOrRefreshGolden, fixtureUserPrompts,
-  launchWebScaffold, recordFixture, seedSession, watchConsole, webSnapshotMode, type WebScaffold,
+  launchWebScaffold, openFullTrajectory, recordFixture, seedSession, watchConsole, webSnapshotMode,
+  type WebScaffold,
 } from './scaffold.ts'
 import { newEnglishPage, saveFailureShot } from './support.ts'
 
@@ -57,19 +58,22 @@ async function ensureSeedOpen(page: Page): Promise<void> {
     await welcome.getByRole('button').click()
     await welcome.waitFor({ state: 'detached', timeout: 15_000 })
   }
-  const chat = page.getByRole('tab', { name: 'Chat', exact: true })
+  // The v2 view ring may still sit on the full trajectory from a previous
+  // scenario; the back bar is the only route back to the conversation.
+  const back = page.getByRole('button', { name: 'Back to conversation', exact: true })
+  if (await back.count() > 0) await back.click()
+  const chatAnchor = page.locator('[data-conversation-scroll] [data-chat-anchor-key]')
   // Search is a collapsed header action; expand it so the input is actionable.
   const searchButton = page.getByRole('button', { name: 'Search sessions' })
   if (await searchButton.getAttribute('aria-expanded') !== 'true') await searchButton.click()
   const search = page.getByPlaceholder('Search sessions', { exact: false })
-  if (await chat.count() === 0) {
+  if (await chatAnchor.count() === 0) {
     await search.fill('WATERFALL')
     const result = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem')
     await expect.poll(() => result.count(), { timeout: 15_000 }).toBe(1)
     await result.click()
-    await chat.waitFor({ timeout: 15_000 })
+    await chatAnchor.first().waitFor({ timeout: 15_000 })
   }
-  await chat.click()
   await page.getByText('FIRST_DONE', { exact: true }).waitFor({ timeout: 15_000 })
   if (await search.inputValue() !== '') {
     await search.fill('')
@@ -226,7 +230,7 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
   it.skipIf(MODE === 'record')('renders the trajectory ledger and opens its local record inspector', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-navigation-trajectory'))
     await ensureSeedOpen(page)
-    await page.getByRole('tab', { name: 'Trajectory' }).click()
+    await openFullTrajectory(page)
     await page.waitForTimeout(100)
     const overlayLayout = await page.getByRole('table').evaluate((table) => {
       const host = table.closest('[data-conversation-scroll]')
@@ -380,7 +384,7 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
   it.skipIf(MODE === 'record')('focuses the ledger by dragging an overview interval', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-navigation-timeline'))
     await ensureSeedOpen(page)
-    await page.getByRole('tab', { name: 'Trajectory' }).click()
+    await openFullTrajectory(page)
     const plot = page.getByLabel('Timeline overview; drag horizontally to focus events')
     await plot.waitFor({ timeout: 15_000 })
     const before = await page.locator('tr[data-kind]').count()
@@ -397,35 +401,45 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     await expect.poll(() => page.locator('tr[data-timeline-focus]').count(), { timeout: 10_000 }).toBe(0)
   }, 60_000)
 
-  it.skipIf(MODE === 'record')('bash and file-path rows leave the default details column closed', async () => {
+  it.skipIf(MODE === 'record')('bash and file-path rows keep the inspector column track unchanged', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-navigation-details'))
     await ensureSeedOpen(page)
+    // The settled turn folds its tool activity; expand the fold to reach the rows.
+    const fold = page.getByRole('button', { name: /Completed · \d+ tools/ }).first()
+    await fold.waitFor({ timeout: 15_000 })
+    await fold.click()
     const bashRow = page.locator('[data-sample="bash"]').first()
     await bashRow.waitFor({ timeout: 15_000 })
     const frame = page.locator('[style*="grid-template-columns"]').first()
-    expect(await frame.getAttribute('data-details-collapsed')).toBe('true')
+    // The v2 inspector column is open by default; row interactions show the
+    // embedded details inside it without changing its track.
+    expect(await frame.getAttribute('data-details-collapsed')).toBeNull()
     // The row click is the card's expand toggle (unified tool-row
     // interaction); it must not drive layout geometry either way.
     await bashRow.click()
-    await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBe('true')
-    // The card's own controls are outside the summary row and must not open
-    // details either — the expanded terminal card is read in place.
+    await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBeNull()
+    // The card's own controls are outside the summary row and must not change
+    // the column either — the expanded terminal card is read in place.
     await page.locator('[data-sample="bash"] ~ div [data-terminal] [class*="_copyButton_"]').first().click()
-    await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBe('true')
-    // Read summaries are host-open file links; they also must not open details.
+    await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBeNull()
+    // Read summaries are host-open file links; they also keep the track.
     const fileLink = page.locator('[data-variant="read"] button').first()
     await fileLink.waitFor({ timeout: 10_000 })
     await fileLink.click()
-    await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBe('true')
+    await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBeNull()
   }, 60_000)
 
   it.skipIf(MODE === 'record')('renders the bash row as a terminal card in the real browser', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-navigation-terminal'))
     await ensureSeedOpen(page)
-    // The card is expand-gated behind the whole-row toggle (the unified
-    // tool-row interaction): open it if this fresh view leaves it collapsed.
-    // Expanded, the recorded command's own output sits in the message flow,
-    // derived from the logged call/result presentations alone.
+    // The settled turn folds its tool activity; expand the fold if a previous
+    // scenario has not, then the card is expand-gated behind the whole-row
+    // toggle (the unified tool-row interaction): open it if this fresh view
+    // leaves it collapsed. Expanded, the recorded command's own output sits
+    // in the message flow, derived from the logged call/result presentations
+    // alone.
+    const fold = page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false }).first()
+    if (await fold.count() > 0) await fold.click()
     const bashRow = page.locator('[data-sample="bash"]').first()
     await bashRow.waitFor({ timeout: 15_000 })
     if (await bashRow.getAttribute('aria-expanded') !== 'true') await bashRow.click()

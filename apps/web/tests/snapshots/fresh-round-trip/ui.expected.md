@@ -2,13 +2,11 @@
   - navigation "Session hierarchy":
     - button "Use the bash tool to" [disabled]
   - img
-  - text: Standard mode
+  - text: Code
+  - button "Show or hide the inspector"
   - button "Session log":
     - text: Session log
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
 - text: "Use the bash tool to run exactly: echo WEB_E2E_OK. Then reply with the single word DONE and stop. {{clock}}"
 - button "Copy":
   - img
@@ -16,14 +14,10 @@
   - img
   - img
   - text: Context injection @deepseek-ai/dsh-system-prompt
-- button "Think The user wants me to run a simple bash command and reply with \"DONE\".":
+- button "Completed · 1 tools"
+- 'button "Failed Bash Error: unknown tool \"bash\""':
   - img
-  - img
-  - text: Think The user wants me to run a simple bash command and reply with "DONE".
-- button "Bash Echo the test string":
-  - img
-  - img
-  - text: Bash Echo the test string
+  - text: "Failed Bash Error: unknown tool \"bash\""
 - button "Think The command executed successfully and output \"WEB_E2E_OK\". I just need to reply with \"DONE\".":
   - img
   - img
@@ -47,4 +41,3 @@
   - img
 - button "6% of context used"
 - button "Send message" [disabled]
-- text: 1 turns · 2 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 99% Input 15.7K tok · Output 111 tok

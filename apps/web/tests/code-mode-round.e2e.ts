@@ -2,10 +2,11 @@
 // shipped tree with the tools row patched to mode: code (the run_code-only
 // wire), a real chromium sends a prompt engineered to elicit one run_code
 // program with several sub-calls, and the UI must render the code-variant
-// parent row with its always-visible nested sub-rows — each sub-row the same
-// component a native call renders through — plus details-panel resolution for
-// a clicked sub-row. Drive steps wait only on generic completion
-// (whenTurnSettled); assertion steps run in replay/refresh only.
+// parent row with its nested sub-rows behind the settled turn's expanded
+// activity fold — each sub-row the same component a native call renders
+// through — plus inspector resolution for a clicked sub-row. Drive steps wait
+// only on generic completion (whenTurnSettled); assertion steps run in
+// replay/refresh only.
 // Record: DSH_SNAPSHOT=record rewrites session.jsonl, then a keyless
 // DSH_SNAPSHOT=refresh regenerates ui.expected.md.
 import { readFile } from 'node:fs/promises'
@@ -100,16 +101,20 @@ describe('web e2e: Code Mode round renders nested sub-calls', () => {
     expect(bashContent.filter(block => block.type === 'text').map(block => block.text).join('')).toContain('CODE_ROUND_OK')
   })
 
-  it.skipIf(MODE === 'record')('renders the code parent row with always-visible nested sub-rows', async () => {
+  it.skipIf(MODE === 'record')('renders the code parent row with nested sub-rows behind the activity fold', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-code-mode-rows'))
     await expect.poll(() => page.getByText('DONE', { exact: true }).count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(1)
-    // The parent run_code row wears the code variant with the model-authored
-    // description as its summary (the presentCall contract).
+    // The settled turn folds its tool activity; expanding the fold reveals the
+    // code parent row with the model-authored description as its summary (the
+    // presentCall contract).
+    const fold = page.getByRole('button', { name: /Completed · \d+ tools/ }).first()
+    await fold.waitFor({ timeout: 10_000 })
+    await fold.click()
     const codeRow = page.locator('[data-variant="code"]').first()
     await codeRow.waitFor({ timeout: 10_000 })
-    // Nested rows are visible WITHOUT any expand interaction, inside the
-    // sub-call nest, each rendered by the same components as native rows:
-    // the bash sub-call landed in the bash sample registration.
+    // Nested rows are visible inside the expanded fold, each rendered by the
+    // same components as native rows: the bash sub-call landed in the bash
+    // sample registration.
     const nest = page.locator('[data-subcalls]').first()
     await nest.waitFor({ timeout: 10_000 })
     expect(await nest.locator('[data-sample="bash"]').count()).toBeGreaterThanOrEqual(1)
@@ -118,14 +123,18 @@ describe('web e2e: Code Mode round renders nested sub-calls', () => {
     expect(await nest.locator('[data-state="error"]').count()).toBeGreaterThanOrEqual(1)
   }, 60_000)
 
-  it.skipIf(MODE === 'record')('a bash sub-row click leaves the default details panel closed', async () => {
+  it.skipIf(MODE === 'record')('a bash sub-row click switches the inspector to the embedded tool view', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-code-mode-details'))
     const nest = page.locator('[data-subcalls]').first()
     const frame = page.locator('[style*="grid-template-columns"]').first()
-    expect(await frame.getAttribute('data-details-collapsed')).toBe('true')
+    // The v2 inspector column is open by default; tool-row clicks show the
+    // embedded details inside it without changing the column geometry.
+    expect(await frame.getAttribute('data-details-collapsed')).toBeNull()
     await nest.locator('[data-sample="bash"]').first().click()
-    // Tool rows do not drive layout geometry; the Session's default panel stays closed.
-    await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBe('true')
+    await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBeNull()
+    // Fold the activity again so the aria golden captures the quiet collapsed
+    // state the product ships.
+    await page.getByRole('button', { name: /Completed · \d+ tools/ }).first().click()
   })
 
   it.skipIf(MODE === 'record')('matches the conversation aria golden with stable anchors', async () => {

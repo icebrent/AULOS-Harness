@@ -801,10 +801,15 @@ describe('ChatView', () => {
       h.set({
         nodes: [user(1, markdown), assistant(2, markdown), assistant(3, markdown)],
         partial: null,
+        turnEnds: new Map([[1, 3]]),
       })
     })
-    expect(view.container.querySelectorAll('h1')).toHaveLength(2)
+    // The intermediate assistant step folds behind the turn's activity
+    // summary; the closing report stays visible.
+    expect(view.container.querySelectorAll('h1')).toHaveLength(1)
     expect(view.container.querySelector('[data-streaming="true"]')).toBeNull()
+    fireEvent.click(view.getByRole('button', { name: /已完成 · \d+ 个工具/ }))
+    expect(view.container.querySelectorAll('h1')).toHaveLength(2)
 
     act(() => {
       h.set({
@@ -870,15 +875,19 @@ describe('ChatView', () => {
     expect(h.toolOwners.at(-1)?.selectedCallId).toBe('a')
   })
 
-  it('hands running calls to a live Tool group', () => {
+  it('shows a running call as the turn activity live block', () => {
     const h = makeHarness({ runningCalls: [runningCall('r1')], running: true })
     const view = render(<h.ChatView {...h.props} />)
-    expect(view.getByTestId('tool-seat-r1')).toBeTruthy()
-    expect(h.toolOwners[0]?.block).toMatchObject({ callId: 'r1', argsRaw: '{"command":"cmd-r1"}' })
-    expect(view.getByRole('status').textContent).toBe('Deep diving...')
+    // The running fold is a live block — names and count, no raw row seat.
+    expect(view.queryByTestId('tool-seat-r1')).toBeNull()
+    expect(h.toolOwners).toEqual([])
+    const live = view.getByRole('status')
+    expect(live.textContent).toContain('Working…')
+    expect(live.textContent).toContain('bash')
+    expect(live.textContent).toContain('1 个工具')
   })
 
-  it('keeps the Tool renderer mounted when a running call settles into log order', () => {
+  it('keeps the Tool renderer mounting at settle when the running call folds into log order', () => {
     const mounted = vi.fn()
     const unmounted = vi.fn()
     function StatefulToolNode({ node }: { readonly node: ChatNode<'tool-call'> }) {
@@ -906,10 +915,11 @@ describe('ChatView', () => {
         : opts?.fallback ?? null
     }) as ChatViewSlotProps['renderSlot']
     const view = render(<h.ChatView {...h.props} />)
-    const tool = view.getByTestId('stateful-tool')
-    const row = view.container.querySelector('[data-chat-flow-key="fixture:tool:r1"]')
-    expect(tool.dataset.state).toBe('running')
-    expect(mounted).toHaveBeenCalledTimes(1)
+    // While the turn runs, the fold is the live block — no raw row mounts.
+    const live = view.getByRole('status')
+    expect(live.textContent).toContain('Working…')
+    expect(view.queryByTestId('stateful-tool')).toBeNull()
+    expect(mounted).not.toHaveBeenCalled()
 
     act(() => {
       h.set({
@@ -919,8 +929,8 @@ describe('ChatView', () => {
       })
     })
 
-    expect(view.getByTestId('stateful-tool')).toBe(tool)
-    expect(view.container.querySelector('[data-chat-flow-key="fixture:tool:r1"]')).toBe(row)
+    // Settled: the row mounts exactly once through the keyed seat.
+    const tool = view.getByTestId('stateful-tool')
     expect(tool.dataset.state).toBe('settled')
     expect(mounted).toHaveBeenCalledTimes(1)
     expect(unmounted).not.toHaveBeenCalled()

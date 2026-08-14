@@ -14,8 +14,13 @@ export const THEME_PREFERENCE_FIELD = 'preference'
 /** Theme preference persisted by the product Appearance row. */
 export type ThemePreference = typeof THEME_PREFERENCES[number]
 
-/** Default preference when the user-settings document has no override. */
-export const DEFAULT_PREFERENCE: ThemePreference = 'system'
+/**
+ * Default preference when the user-settings document has no override.
+ * The product ships a single polished light theme; the preference still
+ * resolves to light even when the OS requests dark, keeping the workspace
+ * surface consistent until a user opts into a different scheme.
+ */
+export const DEFAULT_PREFERENCE: ThemePreference = 'light'
 
 /** Durable theme section shared by the Host schema and the browser scope. */
 export interface ThemeSettings {

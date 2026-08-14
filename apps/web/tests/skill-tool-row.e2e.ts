@@ -42,6 +42,10 @@ describe.skipIf(MODE === 'record')('web e2e: dedicated Skill tool row', () => {
     const sessionRow = page.locator('[role="treeitem"]').nth(1)
     await sessionRow.waitFor({ timeout: 10_000 })
     await sessionRow.click()
+    // The settled turn folds its tool activity; expand the fold to reach the row.
+    const fold = page.getByRole('button', { name: /Completed · \d+ tools/ }).first()
+    await fold.waitFor({ timeout: 15_000 })
+    await fold.click()
     await page.locator('[data-tool="skill"]').waitFor({ timeout: 15_000 })
   }, 120_000)
 

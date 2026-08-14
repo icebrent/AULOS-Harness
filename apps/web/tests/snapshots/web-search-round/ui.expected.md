@@ -2,13 +2,11 @@
   - navigation "Session hierarchy":
     - button "Use web_search to search exactly" [disabled]
   - img
-  - text: Standard mode
+  - text: Code
+  - button "Show or hide the inspector"
   - button "Session log":
     - text: Session log
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
 - text: Use web_search to search exactly "DeepSeek Harness snapshot search". Then reply exactly SEARCH_DONE and stop. {{clock}}
 - button "Copy":
   - img
@@ -16,10 +14,7 @@
   - img
   - img
   - text: Context injection @deepseek-ai/dsh-system-prompt
-- button "Search DeepSeek Harness snapshot search":
-  - img
-  - img
-  - text: Search DeepSeek Harness snapshot search
+- button "Completed · 1 tools"
 - paragraph: SEARCH_DONE
 - button "Copy":
   - img
@@ -39,4 +34,3 @@
   - img
 - button "0% of context used"
 - button "Send message" [disabled]
-- text: 1 turns · 2 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 0% Input 22 tok · Output 7 tok

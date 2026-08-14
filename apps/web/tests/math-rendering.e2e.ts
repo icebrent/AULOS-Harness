@@ -119,10 +119,11 @@ describe('web e2e: settled Markdown math rendering', () => {
     await expect.poll(() => page.locator('.katex').count(), { timeout: 10_000 }).toBe(6)
     await expect.poll(() => page.locator('.katex-display').count(), { timeout: 10_000 }).toBe(2)
     expect(await page.locator('.katex-error').count()).toBe(0)
-    await expect.poll(
-      () => page.getByText('1 turns · 1 steps', { exact: false }).count(),
-      { timeout: 10_000 },
-    ).toBe(1)
+    // The v2 stats surface: the inspector's Activity tab carries the Run
+    // section (Steps / Turns) that the removed composer strip used to show.
+    await page.getByRole('tab', { name: 'Activity', exact: true }).click()
+    await expect.poll(() => page.getByText('Steps', { exact: true }).count(), { timeout: 10_000 }).toBe(1)
+    await expect.poll(() => page.getByText('Turns', { exact: true }).count(), { timeout: 10_000 }).toBe(1)
 
     const snapshot = (await captureStableAria(page, '[class*="centerCol"]', scaffold.workspaceCwd))
       .split(SEED_ID).join('{{seededId}}')

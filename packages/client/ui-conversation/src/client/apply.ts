@@ -28,13 +28,12 @@ import { InputBar } from './skeleton/InputBar.tsx'
 import { EnterBehaviorRow } from './settings/EnterBehaviorRow.tsx'
 import type { EnterBehaviorRowInjected } from './settings/EnterBehaviorRow.tsx'
 import { ChatView } from './chat/ChatView.tsx'
-import { StatsLine } from './chat/StatsLine.tsx'
 import { ApprovalPanel } from './skeleton/ApprovalPanel.tsx'
 import { todoDockEntry } from './skeleton/TodoPanel.tsx'
 import { queueDockEntry } from './queue/QueueDock.tsx'
 import { ConversationRoot } from './skeleton/ConversationRoot.tsx'
 import { ConversationSession, ConversationSessionHeader } from './skeleton/ConversationSession.tsx'
-import { DetailsPanel } from './skeleton/DetailsPanel.tsx'
+import { InspectorPanel } from './skeleton/InspectorPanel.tsx'
 import { en, NS, zh, type ConversationKey } from './locales.ts'
 import { registerConversationNodes } from './conversation-nodes/register.ts'
 import { registerChatNodeRenderers } from './chat/register-node-renderers.ts'
@@ -238,6 +237,7 @@ export function apply(ctx: Context): void {
   // session appears after a Workspace pick.
   slots.register({
     name: 'conversation.session',
+    locale: NS,
     children: {
       'conversation.view': { kind: 'list', scope: 'session' },
     },
@@ -265,6 +265,7 @@ export function apply(ctx: Context): void {
     inject: (): ConversationSessionHeaderInjected => ({
       views,
       open: (id) => { sessions.open(id) },
+      toggleInspector: () => { layout.toggleDetails() },
     }),
   }, ConversationSessionHeader)
 
@@ -425,8 +426,8 @@ export function apply(ctx: Context): void {
     },
   }, ChatView)
 
-  // Session stats stick with the composer (composer.dock = stats-line family).
-  slots.register({ name: 'conversation.composer.dock', id: 'stats', order: 0, locale: NS }, StatsLine)
+  // Session stats moved into the right inspector column; the composer dock
+  // keeps only the queue/todo strips.
 
   // Class-plugin mount (packages/AGENTS.md service form): the service
   // registers itself as `conversation` and lives on its own child fiber.
@@ -451,6 +452,6 @@ export function apply(ctx: Context): void {
     inject: (): DetailsInjected => ({
       closeDetails: () => { layout.closeDetails() },
     }),
-  }, DetailsPanel)
+  }, InspectorPanel)
 
 }

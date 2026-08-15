@@ -3,10 +3,12 @@
     - button "/user-invoke-demo and confirm the fixtur" [disabled]
   - img
   - text: Code
-  - button "Show or hide the inspector"
+  - button "Show or hide the Files panel"
+  - button "Full trajectory"
   - button "Session log":
     - text: Session log
     - img
+- group "Current session context figures": Context 0% 280 / 128K Tokens 256 / 16 Input / Output Cache 0% 0 / 0 TTFT {{duration}} {{throughput}} tok/s
 - text: /user-invoke-demo and confirm the fixture wiring {{clock}}
 - button "Copy":
   - img
@@ -28,6 +30,9 @@
 - button "Branch into a new conversation":
   - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
+- button "Expand trajectory panel":
+  - text: Trajectory
+  - img
 - textbox "Message the agent"
 - button "Commands":
   - img
@@ -37,3 +42,4 @@
   - img
 - button "0% of context used"
 - button "Send message" [disabled]
+- text: 1 turns · 1 steps LLM {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 0% Input 256 tok · Output 16 tok

@@ -102,25 +102,21 @@ describe('web e2e: whole-session stats survive history paging', () => {
     // Settled barrier: the newest recorded reply renders from the tail page.
     await expect.poll(() => page.getByText(`r${TURNS}`, { exact: true }).count(), { timeout: 15_000 }).toBe(1)
     // The tail page is partial (56 messages > one 50-message page): the first
-    // turns are NOT loaded, yet the inspector's Activity tab already reports
-    // the whole log — the sessionStats projection, not the window fold.
+    // turns are NOT loaded, yet the restored stats strip already reports the
+    // whole log — the sessionStats projection, not the window fold.
     expect(await page.getByText('m1', { exact: true }).count()).toBe(0)
-    await page.getByRole('tab', { name: 'Activity', exact: true }).click()
-    const rowText = async (label: string): Promise<string> => {
-      const row = page.locator('[class*="statRow"]').filter({ has: page.getByText(label, { exact: true }) })
-      return (await row.textContent()) ?? ''
+    const countsText = async (): Promise<string> => {
+      const strip = page.getByText(/turns · \d+ steps/).first()
+      return (await strip.textContent()) ?? ''
     }
-    await expect.poll(() => rowText('Steps'), { timeout: 10_000 }).toBe(`Steps${TURNS}`)
-    await expect.poll(() => rowText('Turns'), { timeout: 10_000 }).toBe(`Turns${TURNS}`)
-    const stepsBefore = await rowText('Steps')
-    const turnsBefore = await rowText('Turns')
+    await expect.poll(countsText, { timeout: 10_000 }).toBe(`${TURNS} turns · ${TURNS} steps`)
+    const countsBefore = await countsText()
 
     // 加载更早: prepending the older page must not move ANY figure —
     // counts, wall times, or token groups.
     await page.getByRole('button', { name: 'Load earlier' }).click()
     await expect.poll(() => page.getByText('m1', { exact: true }).count(), { timeout: 10_000 }).toBe(1)
-    expect(await rowText('Steps')).toBe(stepsBefore)
-    expect(await rowText('Turns')).toBe(turnsBefore)
+    expect(await countsText()).toBe(countsBefore)
     // With the whole log loaded, the window mounts one turn-tail footer per
     // settled turn — the loaded-window probe the scroll/perf lanes count now
     // that the strip is whole-log-scoped.

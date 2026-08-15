@@ -144,7 +144,7 @@ async function detailsTrack(page: Page): Promise<number> {
 const UI_PLUGIN_DIRS = [
   'connection', 'runtime', 'ui-theme', 'locale', 'ui-layout', 'ui-sidebar',
   'ui-settings', 'ui-settings-general', 'ui-settings-models', 'ui-conversation',
-  'ui-model-selection', 'ui-user-questions', 'ui-trajectory', '../session-query/session-log-export',
+  'ui-model-selection', 'ui-user-questions', 'ui-trajectory', 'ui-files', '../session-query/session-log-export',
 ]
 const ROUND_DONE_MARKER = 'WEB_ROUND_DONE'
 const notReady = UI_PLUGIN_DIRS.filter((dir) => {
@@ -577,12 +577,11 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY || notReady.length > 0)('web smoke
     await screen(page, '04-round-complete')
   }, 150_000)
 
-  it('trajectory opens from the Activity panel and the back bar returns to chat', async () => {
+  it('trajectory opens from the header utility and the back bar returns to chat', async () => {
     onTestFailed(() => saveFailureShot(page, 'w5-tabs'))
     // Inlined from scaffold's openFullTrajectory: this file must stay in the
     // client aggregate, which cannot import the host-plane scaffold helper.
-    await page.getByRole('tab', { name: 'Activity', exact: true }).click()
-    await page.getByRole('button', { name: 'Open full trajectory' }).click()
+    await page.getByRole('button', { name: 'Full trajectory', exact: true }).click()
     await page.getByLabel('Trajectory timeline').waitFor({ timeout: 30_000 })
     await screen(page, '05-trajectory-tab')
     await expect.poll(() => page.getByRole('tab', { name: 'Waterfall' }).count()).toBe(0)
@@ -592,7 +591,7 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY || notReady.length > 0)('web smoke
     await screen(page, '07-back-to-chat')
   })
 
-  it('bash differential rendering: the settled fold reveals the tool row and its click keeps the inspector column', async () => {
+  it('bash differential rendering: the settled fold reveals the tool row and its click keeps the Files column', async () => {
     onTestFailed(() => saveFailureShot(page, 'w5-tool-details'))
     const input = page.locator('textarea').first()
     await input.fill('请用 bash 工具运行命令 echo w5marker 然后告诉我结果')
@@ -608,8 +607,8 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY || notReady.length > 0)('web smoke
     const toolRow = page.locator('[data-sample="bash"]')
     await toolRow.waitFor({ timeout: 120_000 })
     await screen(page, '08-bash-round')
-    // The v2 inspector column is open by default and tool-row clicks show the
-    // embedded details inside it without changing its track.
+    // The Files column is open by default and a tool-row click must not
+    // change its track (the embedded tool-details view is gone).
     const before = await detailsTrack(page)
     expect(before).toBeGreaterThan(0)
     await toolRow.click()

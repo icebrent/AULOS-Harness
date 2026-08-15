@@ -3,10 +3,12 @@
     - 'button "Using ONE run_code program: run" [disabled]'
   - img
   - text: Code
-  - button "Show or hide the inspector"
+  - button "Show or hide the Files panel"
+  - button "Full trajectory"
   - button "Session log":
     - text: Session log
     - img
+- group "Current session context figures": Context 7% 8.8K / 128K Tokens 17.2K / 252 Input / Output Cache 52% 9K / 0 TTFT {{duration}} {{throughput}} tok/s
 - text: "Using ONE run_code program: run bash `echo CODE_ROUND_OK`, then read the file missing.txt catching its error in the program. Return an object with both outcomes. Then reply DONE and stop. {{clock}}"
 - button "Copy":
   - img
@@ -37,6 +39,9 @@
 - button "Branch into a new conversation":
   - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
+- button "Expand trajectory panel":
+  - text: Trajectory
+  - img
 - textbox "Message the agent"
 - button "Commands":
   - img
@@ -46,3 +51,4 @@
   - img
 - button "7% of context used"
 - button "Send message" [disabled]
+- text: 1 turns · 2 steps LLM {{duration}} · Tool call {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 52% Input 17.2K tok · Output 252 tok

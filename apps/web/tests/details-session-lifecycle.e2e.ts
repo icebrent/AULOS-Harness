@@ -97,16 +97,16 @@ describe.skipIf(MODE === 'record')('web e2e: details panel follows the current S
     await settled
     await page.getByText('LIGHTHOUSE', { exact: true }).waitFor({ timeout: 15_000 })
 
-    // The v2 inspector column opens with the first active session (the
-    // layout default), at the product's default width of 360px.
+    // The Files column opens with the first active session (the layout
+    // default), at the product's default width of 360px.
     await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(360)
-    await page.getByRole('tablist', { name: 'Details' }).waitFor({ timeout: 10_000 })
+    await page.getByRole('tree', { name: 'Files' }).waitFor({ timeout: 10_000 })
     await compareOrRefreshGolden(HANDLES_EXPECTED, await handleSnapshot(page), MODE)
 
     // The header toggle closes and reopens the column; the state then
-    // survives a reload (the v2 inspector persists across sessions too).
+    // survives a reload (the Files panel persists across sessions too).
     // The details slot stays mounted at zero width — the track is the state.
-    const toggle = page.getByRole('button', { name: 'Show or hide the inspector' })
+    const toggle = page.getByRole('button', { name: 'Show or hide the Files panel' })
     await toggle.click()
     await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(0)
     await toggle.click()
@@ -129,11 +129,11 @@ describe.skipIf(MODE === 'record')('web e2e: details panel follows the current S
     await appFrame(page).waitFor({ timeout: 30_000 })
     await page.getByText('LIGHTHOUSE', { exact: true }).waitFor({ timeout: 15_000 })
     await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(360)
-    await page.getByRole('tablist', { name: 'Details' }).waitFor({ timeout: 10_000 })
+    await page.getByRole('tree', { name: 'Files' }).waitFor({ timeout: 10_000 })
 
     await page.getByRole('button', { name: /^(?:New session|新.*会话)$/ }).last().click()
     await page.getByText('Into the Unknown', { exact: false }).waitFor({ timeout: 15_000 })
-    // The v2 inspector opens for an ACTIVE session only: the blank hero
+    // The Files column opens for an ACTIVE session only: the blank hero
     // closes the column again.
     await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(0)
 
@@ -141,7 +141,7 @@ describe.skipIf(MODE === 'record')('web e2e: details panel follows the current S
     await original.click()
     await page.getByText('LIGHTHOUSE', { exact: true }).waitFor({ timeout: 15_000 })
     await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(360)
-    await page.getByRole('tablist', { name: 'Details' }).waitFor({ timeout: 10_000 })
+    await page.getByRole('tree', { name: 'Files' }).waitFor({ timeout: 10_000 })
 
     const ungrouped = page.getByText('Ungrouped', { exact: true })
     const ungroupedRow = ungrouped.locator('..').locator('..')

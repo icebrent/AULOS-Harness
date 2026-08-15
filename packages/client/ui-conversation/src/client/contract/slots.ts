@@ -7,7 +7,7 @@ import type {
 } from '@deepseek-ai/dsh-client-ui-slots'
 import type {
   CommandNode, CompactionSummaryNode, ConversationSnapshot, ConversationTurnDataMap,
-  ObservableSnapshot, PendingInteraction, PendingWait, SessionId, ToolCallBlock,
+  ObservableSnapshot, PendingInteraction, PendingWait, SessionId,
   TurnLocation, WorkspaceId,
 } from '@deepseek-ai/dsh-client-runtime/client'
 import type { MarkdownFileMentions } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -74,6 +74,17 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      * conversation snapshot through the standard kit.
      */
     'conversation.view': { kind: 'list'; scope: 'session'; owner: ConvViewOwnerProps }
+    /**
+     * The chat's bottom trajectory region, rendered by the session body
+     * entry (which shares the chat store with the view ring): one occupant
+     * (ui-trajectory's resizable panel), so the trajectory body and the chat
+     * are visible at once. The owner dispatches the same
+     * {@link ConvViewOwnerProps} inspect handoff as the view ring — a chat
+     * tool-row inspect expands the panel — and renders the slot only while
+     * the full trajectory tab is inactive, so the same ledger never appears
+     * twice. The region stays empty while no entry registers.
+     */
+    'conversation.session.bottom': { kind: 'single'; scope: 'session'; owner: ConvViewOwnerProps }
     /** Final business node renderer, dispatched by `ChatConversationViewNode.kind`. */
     'conversation.chat.node': {
       kind: 'keyed'
@@ -111,17 +122,6 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
       scope: 'session'
       owner: AssistantActionOwnerProps
     }
-    /**
-     * The body of the details panel for the tool call the user selected —
-     * one occupant, so taking it means rendering every tool's output, not just
-     * the ones you know. The owner passes a frozen `block` whose two lifecycle
-     * forms must both be handled: branch on `'kind' in block` (a settled
-     * `ToolResultNode` has it, a still-running call does not), and treat
-     * `cwd` as display-only, for shortening workspace-rooted paths.
-     * A per-tool renderer belongs in the keyed `tool.call.toolview` seat
-     * instead; this one is the whole panel.
-     */
-    'conversation.details.tool': { kind: 'single'; scope: 'session'; owner: DetailsToolOwnerProps }
     /**
      * The composer takeover chain: entries are selector-routed replacements
      * of the default InputBar. Declared by this package's 'conversation'
@@ -371,14 +371,6 @@ export interface ChatNodeOwnerProps {
 export type ChatNodeViewProps<Kind extends ChatNodeKind = ChatNodeKind> =
   PropsRuntime<'conversation.chat.node', Kind> & PropsLocale<'conversation'>
 
-/** Owner currency of the details panel's Tool output renderer. */
-export interface DetailsToolOwnerProps {
-  /** Frozen selected call slice. */
-  block: ToolCallBlock
-  /** Session workspace root for card cwd and relative-path display. */
-  cwd?: string | undefined
-}
-
 /**
  * Owner share of the per-command row slot: the frozen {@link CommandNode}
  * slice off the snapshot (cache-stable reference — memo premise). The node
@@ -449,8 +441,8 @@ export interface ConversationSessionHeaderInjected {
   }
   /** Select a real Session through the runtime navigation owner. */
   open: (sessionId: SessionId) => void
-  /** Toggle the right inspector column (context/activity panel). */
-  toggleInspector: () => void
+  /** Toggle the right Files column (layout geometry stays with ctx.layout). */
+  toggleFiles: () => void
 }
 
 /**
@@ -566,8 +558,8 @@ export interface ComposerChainProps {
 
 /**
  * Full conversation-slot component props: runtime & child-render (view ring
- * + composer chain/bar + input-region + hero picker slots) & store & injected
- * shares & the locale seat.
+ * + composer chain/bar + input-region + hero picker slots) & injected shares
+ * & the locale seat.
  */
 export type ConversationSlotProps =
   PropsRuntime<'conversation'> & PropsRenderSlots<
@@ -582,10 +574,10 @@ export type ConversationSlotProps =
   & InjectFace<ConversationInjected>
   & PropsLocale<'conversation'>
 
-/** Full strict-session body props: per-session store, view ring, and draft mirror. */
+/** Full strict-session body props: per-session store, view ring, bottom region, and draft mirror. */
 export type ConversationSessionSlotProps =
   PropsRuntime<'conversation.session'>
-  & PropsRenderSlots<'conversation.view'>
+  & PropsRenderSlots<'conversation.view' | 'conversation.session.bottom'>
   & PropsStore<ChatStore>
   & ConversationSessionInjected
   & PropsLocale<'conversation'>
@@ -673,12 +665,12 @@ export interface ChatScrollPosition {
 }
 
 /**
- * Injected share of the chat view entry: the two callbacks whose targets live
- * outside the view (layout orchestration; the session object layer).
+ * Injected share of the chat view entry: the callbacks whose targets live
+ * outside the view (the session object layer).
  */
 export interface ChatViewInjected {
-  /** Selection write + details panel opening in one gesture (store action + layout orchestration). */
-  openDetails: (target: SelectionTarget) => void
+  /** Write the shared tool-call selection (chat row highlight). */
+  selectCall: (target: SelectionTarget) => void
   /**
    * Open a tool-arg filesystem path with the host OS default application
    * (relative paths resolve against the session cwd).
@@ -715,19 +707,6 @@ export interface ChatViewInjected {
 export type ChatViewSlotProps =
   PropsRuntime<'conversation.view'> & PropsRenderSlots<'conversation.chat.node'>
   & PropsStore<ChatStore> & ChatViewInjected & PropsLocale<'conversation'>
-
-/**
- * Injected share of the details slot: the panel is otherwise a pure reader of
- * the shared chat store, but its close button is a layout orchestration call.
- */
-export interface DetailsInjected {
-  /** Close the details panel (layout geometry stays with ctx.layout). */
-  closeDetails: () => void
-}
-
-/** Full details-slot props: selection store, Tool output seat, injected close callback, and locale. */
-export type DetailsSlotProps = PropsRuntime<'details'> & PropsRenderSlots<'conversation.details.tool'>
-  & PropsStore<ChatStore> & DetailsInjected & PropsLocale<'conversation'>
 
 /** Owner share common to the hero / New-Session Workspace pickers. */
 export interface EmptyWorkspaceOwnerProps {

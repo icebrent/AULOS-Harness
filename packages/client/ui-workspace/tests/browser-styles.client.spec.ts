@@ -101,7 +101,9 @@ describe('WorkspaceBrowser.module.css list', () => {
     expect(declarations('.sessionOverflowButton')?.get('height')).toBe('28px')
     expect(declarations('.searchExpanded')?.get('height')).toBe('30px')
     expect(rowDeclarations('.projectRow')?.get('height')).toBe('34px')
-    expect(rowDeclarations('.sessionRow')?.get('height')).toBe('32px')
+    // The metadata line makes session rows two-line: a 32px floor, no fixed height.
+    expect(rowDeclarations('.sessionRow')?.get('min-height')).toBe('32px')
+    expect(rowDeclarations('.sessionRow')?.get('height')).toBeUndefined()
     expect(rowDeclarations('.flatSessionRowWithoutStatus .title')?.get('margin-left')).toBe('0')
     expect(rowDeclarations('.searchResultRow')?.get('min-height')).toBe('48px')
     expect(rowDeclarations('.sessionRow.selected')?.get('background'))

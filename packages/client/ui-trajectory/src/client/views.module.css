@@ -1,16 +1,31 @@
-/* Full-bleed, fixed-height host for the trajectory ledger. */
+/* Full-bleed, fixed-height host for the trajectory ledger. The full view
+   wrapper (flex:1) and the bottom panel body (fixed height) both flex-fill
+   this box, so it owns no height of its own. The ledger bottom clearance is
+   host-owned: the full-view wrapper reserves the floating composer's live
+   height, the bottom panel overrides it with a plain 16px. */
 .root {
   --dsh-trajectory-toolbar-height: 32px;
 
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  height: 100%;
+  flex: 1 1 0;
   min-height: 0;
   width: 100%;
   box-sizing: border-box;
   color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-bg-layer-1);
+}
+
+/* Full-view wrapper: fills the view area, opts the scrollport into the
+   floating-composer layout, and reserves the composer's live height below
+   the ledger (published by ConversationRoot on the scrollport). */
+.viewRoot {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  --dsh-trajectory-bottom-clearance: calc(var(--dsh-composer-height, 152px) + 16px);
 }
 
 .ledger {
@@ -22,7 +37,6 @@
   min-height: 0;
   min-width: 0;
   overflow: hidden;
-
-  /* ConversationRoot publishes the floating composer's live height. */
-  --dsh-trajectory-bottom-clearance: calc(var(--dsh-composer-height, 152px) + 16px);
+  /* Bottom clearance inherits from the host (the full-view wrapper or the
+     bottom panel); see the module comment. */
 }

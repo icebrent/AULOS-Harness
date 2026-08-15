@@ -1,1 +1,1 @@
-- 'treeitem "Plan awaiting review Plan a small change: add now" [selected]'
+- 'treeitem "Plan awaiting review Plan a small change: add 5.2K Cache 12% Context 4% now" [selected]'

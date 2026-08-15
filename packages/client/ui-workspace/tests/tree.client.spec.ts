@@ -3,7 +3,8 @@ import type {
   SessionId, SessionListState, SessionSummary, WorkspaceId, WorkspaceView,
 } from '@deepseek-ai/dsh-client-runtime/client'
 import {
-  deriveFlat, deriveGroups, deriveSearchResults, workspaceLabel, relativeTime,
+  deriveFlat, deriveGroups, deriveSearchResults, sessionRowMetrics,
+  workspaceLabel, relativeTime,
   UNGROUPED_KEY, UNGROUPED_LABEL,
 } from '../src/client/tree.ts'
 import { createWorkspaceViewStore } from '../src/client/stores.ts'
@@ -446,5 +447,54 @@ describe('relativeTime', () => {
     expect(relativeTime(now - 2 * 86_400_000, now)).toEqual({ unit: 'days', n: 2 })
     expect(relativeTime(now - 60 * 86_400_000, now)).toEqual({ unit: 'months', n: 2 })
     expect(relativeTime(0, now)).toEqual({ unit: 'years', n: 1 })
+  })
+})
+
+describe('projection passthrough', () => {
+  it('carries the list-published projection values into grouped and flat session rows', () => {
+    const projections = {
+      tokenUsage: { uncachedInputTokens: 1, outputTokens: 2, cacheReadTokens: 3, cacheWriteTokens: 4 },
+    }
+    const sessions = list({ ...summary('meta', 10), projectionValues: projections })
+    const grouped = deriveGroups(sessions, [workspace('project', ['meta'])], noArchive, view(['project']))
+    expect(grouped[0]!.sessions[0]!.projectionValues).toEqual(projections)
+    expect(deriveFlat(sessions, noArchive)[0]!.projectionValues).toEqual(projections)
+    // Rows without values omit the field entirely (the ungrouped bucket must
+    // be expanded for the tree to materialize its session rows).
+    const plain = deriveGroups(list(summary('plain', 5)), [], noArchive, view([UNGROUPED_KEY]))
+    expect(plain[0]!.sessions[0]!.projectionValues).toBeUndefined()
+  })
+})
+
+describe('sessionRowMetrics', () => {
+  it('folds billed tokens, cache hit, and context occupancy from the projections', () => {
+    const metrics = sessionRowMetrics({
+      tokenUsage: { uncachedInputTokens: 59, outputTokens: 9, cacheReadTokens: 41, cacheWriteTokens: 0 },
+      contextPressure: { projectedTokens: 601, contextWindow: 1_000 },
+    })
+    expect(metrics).toEqual({ billedTokens: 100, cachePercent: 41, contextPercent: 60 })
+  })
+
+  it('prefers projected pressure and falls back to the bare provider sample', () => {
+    expect(sessionRowMetrics({ contextPressure: { pressureTokens: 250, contextWindow: 1_000 } }))
+      .toEqual({ billedTokens: 0, cachePercent: null, contextPercent: 25 })
+    expect(sessionRowMetrics({
+      contextPressure: { pressureTokens: 250, projectedTokens: 500, contextWindow: 1_000 },
+    })).toEqual({ billedTokens: 0, cachePercent: null, contextPercent: 50 })
+  })
+
+  it('clamps occupancy at 100 and reports null for unknown figures', () => {
+    expect(sessionRowMetrics({
+      tokenUsage: { uncachedInputTokens: 10, outputTokens: 0, cacheReadTokens: 0, cacheWriteTokens: 0 },
+      contextPressure: { projectedTokens: 2_000, contextWindow: 1_000 },
+    })).toEqual({ billedTokens: 10, cachePercent: 0, contextPercent: 100 })
+    // Pressure without capacity: occupancy unknown, tokens still reported.
+    expect(sessionRowMetrics({ contextPressure: { pressureTokens: 10 } }))
+      .toEqual({ billedTokens: 0, cachePercent: null, contextPercent: null })
+  })
+
+  it('returns null while no projection value exists', () => {
+    expect(sessionRowMetrics(undefined)).toBeNull()
+    expect(sessionRowMetrics({})).toBeNull()
   })
 })

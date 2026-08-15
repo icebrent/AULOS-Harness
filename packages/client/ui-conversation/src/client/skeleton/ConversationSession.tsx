@@ -63,7 +63,7 @@ function equalBreadcrumbs(left: readonly Breadcrumb[], right: readonly Breadcrum
  */
 export function ConversationSessionHeader({
   sessionId, useSession, useSessions, useStore,
-  renderSlot, views, open, toggleInspector, t,
+  renderSlot, views, open, toggleFiles, t,
 }: ConversationSessionHeaderProps) {
   useSyncExternalStore(views.subscribe, views.version)
   const tabs = views.list()
@@ -111,9 +111,9 @@ export function ConversationSessionHeader({
             <button
               type="button"
               className={css.inspectorToggle}
-              aria-label={t('session.toggleInspector')}
-              title={t('session.toggleInspector')}
-              onClick={() => { toggleInspector() }}
+              aria-label={t('session.toggleFiles')}
+              title={t('session.toggleFiles')}
+              onClick={() => { toggleFiles() }}
             >
               <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden>
                 <path
@@ -187,6 +187,19 @@ export function ConversationSession({
         inspect,
         onInspectDone: () => { actions.setInspect(null) },
       }, { only: active.id })}
+      {/* The bottom trajectory region: rendered by THIS entry because it
+          shares the chat store (active-view gating + inspect handoff) with
+          the view ring. Sticky just above the composer seat, so chat and
+          the trajectory panel stay visible together; unmounted on the full
+          trajectory tab — the same ledger never renders twice. */}
+      {!inTrajectory && (
+        <div className={css.bottomSlot}>
+          {renderSlot('conversation.session.bottom', {
+            inspect,
+            onInspectDone: () => { actions.setInspect(null) },
+          })}
+        </div>
+      )}
     </div>
   )
 }

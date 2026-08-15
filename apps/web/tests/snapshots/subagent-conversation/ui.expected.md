@@ -8,10 +8,12 @@
   - button "1 subagent":
     - text: 1 subagent
     - img
-  - button "Show or hide the inspector"
+  - button "Show or hide the Files panel"
+  - button "Full trajectory"
   - button "Session log":
     - text: Session log
     - img
+- group "Current session context figures": Context 6% 7.9K / 128K Tokens 15.6K / 158 Input / Output Cache 99% 15.4K / 0 TTFT {{duration}} {{throughput}} tok/s
 - text: Explain event sourcing in one sentence. {{clock}}
 - button "Copy":
   - img
@@ -49,9 +51,13 @@
 - button "Branch into a new conversation":
   - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
+- button "Expand trajectory panel":
+  - text: Trajectory
+  - img
 - textbox "Message the agent"
 - button "Commands":
   - img
 - 'button "Access mode, current: Custom"': Custom
 - button "6% of context used"
 - button "Send message" [disabled]
+- text: 2 turns · 2 steps LLM {{duration}} TTFT avg {{duration}} · {{throughput}} tok/s Cache hit 99% Input 15.6K tok · Output 158 tok

@@ -164,7 +164,13 @@ function flowTop(row: HTMLElement, scrollport: HTMLElement): number {
 function pagingAnchor(list: HTMLElement, scrollport: HTMLElement): HTMLElement | null {
   const viewport = scrollport.getBoundingClientRect()
   const composer = scrollport.querySelector<HTMLElement>('[data-composer-seat]')
-  const visibleBottom = composer?.getBoundingClientRect().top ?? viewport.bottom
+  // The bottom trajectory panel, when mounted, sits between the transcript
+  // and the composer: rows behind it are not readable, so it shortens the
+  // visible band exactly like the composer seat does.
+  const panel = scrollport.querySelector<HTMLElement>('[data-trajectory-panel]')
+  const visibleBottom = panel?.getBoundingClientRect().top
+    ?? composer?.getBoundingClientRect().top
+    ?? viewport.bottom
   // Scroll events are hot: hit-test a few points through the stretched flow
   // rows before considering the full mounted set. The fallback keeps jsdom
   // and pre-layout states deterministic; a virtualizer naturally bounds it.

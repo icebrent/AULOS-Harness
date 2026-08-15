@@ -41,6 +41,51 @@
   display: none;
 }
 
+/* Left-aligned seat for the compact context card under the session header. */
+.contextCardSeat {
+  flex: none;
+  padding: 10px 24px 0 20px;
+}
+
+/* Bottom trajectory region inside the session flow: sticky just above the
+   composer seat (its live height rides --dsh-composer-height), so the panel
+   stays docked while the transcript scrolls beneath it. The panel entry
+   owns its own height and chrome. */
+.bottomSlot {
+  flex: none;
+  position: sticky;
+  bottom: var(--dsh-composer-height, 152px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  margin: 0 16px 8px;
+  border-radius: var(--dsw-alias-radius-md);
+  box-shadow: var(--dsw-alias-shadow-soft);
+  overflow: hidden;
+}
+
+.bottomSlot:empty {
+  display: none;
+}
+
+/* Quiet text utility button (Full Trajectory entry) beside the Files toggle. */
+.utilityButton {
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 28px;
+  cursor: pointer;
+}
+
+.utilityButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
 .titleRow {
   display: flex;
   align-items: center;

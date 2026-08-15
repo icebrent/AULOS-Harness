@@ -401,7 +401,7 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     await expect.poll(() => page.locator('tr[data-timeline-focus]').count(), { timeout: 10_000 }).toBe(0)
   }, 60_000)
 
-  it.skipIf(MODE === 'record')('bash and file-path rows keep the inspector column track unchanged', async () => {
+  it.skipIf(MODE === 'record')('bash and file-path rows keep the Files column track unchanged', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-navigation-details'))
     await ensureSeedOpen(page)
     // The settled turn folds its tool activity; expand the fold to reach the rows.
@@ -411,8 +411,9 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     const bashRow = page.locator('[data-sample="bash"]').first()
     await bashRow.waitFor({ timeout: 15_000 })
     const frame = page.locator('[style*="grid-template-columns"]').first()
-    // The v2 inspector column is open by default; row interactions show the
-    // embedded details inside it without changing its track.
+    // The Files column is open by default; tool-row interactions must not
+    // change its track (the embedded tool-details view is gone — args/result
+    // live in trajectory now).
     expect(await frame.getAttribute('data-details-collapsed')).toBeNull()
     // The row click is the card's expand toggle (unified tool-row
     // interaction); it must not drive layout geometry either way.

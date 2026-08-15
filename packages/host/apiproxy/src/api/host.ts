@@ -30,6 +30,14 @@ export interface DirectoryListing {
   entries: DirectoryEntry[]
   /** True when the backend cut `entries` at its complete-result bound (the name-sorted tail is absent). */
   truncated: boolean
+  /**
+   * Direct child files, name-sorted; absent only from backends that predate
+   * the Files-tree extension. Symlinks resolving to files are included;
+   * broken links are skipped. Bounded by the same `maxEntries` as `entries`.
+   */
+  files?: DirectoryEntry[]
+  /** True when the backend cut `files` at its complete-result bound (the name-sorted tail is absent). */
+  filesTruncated?: boolean
 }
 
 /** Host-level unary methods. */

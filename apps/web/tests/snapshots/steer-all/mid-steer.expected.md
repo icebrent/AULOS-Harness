@@ -3,7 +3,8 @@
     - button "Use the ask_user_question tool to" [disabled]
   - img
   - text: Code
-  - button "Show or hide the inspector"
+  - button "Show or hide the Files panel"
+  - button "Full trajectory"
   - button "Session log":
     - text: Session log
     - img
@@ -24,6 +25,9 @@
   - img
 - text: "Interjection: include the word ORANGE in your final reply."
 - button "Copy":
+  - img
+- button "Expand trajectory panel":
+  - text: Trajectory
   - img
 - textbox "Message the agent"
 - button "Commands":

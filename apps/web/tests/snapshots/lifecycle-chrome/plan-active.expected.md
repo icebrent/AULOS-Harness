@@ -20,7 +20,7 @@
 - button "Settings":
   - img
   - text: Settings
-- text: Into the Unknown Preview
+- text: Orchestrate Intelligence The Power of AI, Harnessed.
 - button "Choose workspace":
   - img
   - text: workspace
@@ -44,8 +44,10 @@
   - img
 - button "Send message" [disabled]
 - banner:
-  - tablist "Details":
-    - tab "Context" [selected]
-    - tab "Activity"
-  - button "Hide inspector"
-- text: No data yet
+  - text: Files
+  - button "Refresh file tree":
+    - img
+  - button "Hide the Files panel":
+    - img
+- text: workspace
+- tree "Files": Empty directory

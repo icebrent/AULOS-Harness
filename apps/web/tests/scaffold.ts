@@ -879,23 +879,14 @@ export async function assertFixtureInventory(dir: string, expected: string[]): P
 }
 
 /**
- * Open the full trajectory through the v2 path: the inspector's Activity tab
- * and its "Open full trajectory" button (the Chat | Trajectory tab ring is
- * gone). The trajectory timeline label is the ready barrier.
+ * Open the full trajectory through the session header's "Full trajectory"
+ * utility (the v2 Activity-panel entry is gone; the bottom panel is the
+ * chat-adjacent surface and this button opens the detailed tab). The
+ * trajectory timeline label is the ready barrier.
  * @param page - the page under test.
  */
 export async function openFullTrajectory(page: Page): Promise<void> {
-  const tab = page.getByRole('tab', { name: 'Activity', exact: true })
-  try {
-    await tab.click({ timeout: 10_000 })
-  } catch {
-    // The header's pointer hit-test can cover the tab's sampled click point
-    // in overflowing layouts; keyboard activation is the same control path a
-    // keyboard user takes.
-    await tab.focus()
-    await page.keyboard.press('Enter')
-  }
-  await page.getByRole('button', { name: 'Open full trajectory' }).click()
+  await page.getByRole('button', { name: 'Full trajectory', exact: true }).click()
   await page.getByLabel('Trajectory timeline').waitFor({ timeout: 30_000 })
 }
 

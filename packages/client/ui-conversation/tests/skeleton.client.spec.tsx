@@ -160,7 +160,7 @@ function mount(
           renderSlot={renderSlot as never}
           views={views}
           open={open}
-          toggleInspector={vi.fn()}
+          toggleFiles={vi.fn()}
           t={t}
         />
       )

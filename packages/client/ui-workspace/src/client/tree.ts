@@ -8,6 +8,10 @@ import {
   type SessionSearchResultItem, type SessionSummary, type SubagentDescendantSummary,
   type WorkspaceId, type WorkspaceView,
 } from '@deepseek-ai/dsh-client-runtime/client'
+import type { SessionProjectionMap } from '@deepseek-ai/dsh-session-projection/types'
+// Type-only: merges the tokenUsage / contextPressure keys into
+// SessionProjectionMap so the row fold below reads the shipped projections.
+import type {} from '@deepseek-ai/dsh-token-meter/client'
 
 /** Group key for Sessions outside every Workspace. */
 export const UNGROUPED_KEY = ''
@@ -30,6 +34,46 @@ export interface SessionNode {
   /** Finished running while not selected and not yet opened (the green "done" reminder dot). */
   completed: boolean
   updatedAt: number
+  /** Current host-computed projection values for the row's metadata line. */
+  projectionValues?: Readonly<Partial<SessionProjectionMap>>
+}
+
+/** Display figures of one session row's metadata line, folded from the list's projection values. */
+export interface SessionRowMetrics {
+  /** Summed prompt-side billing (uncached input + cache reads + writes). */
+  billedTokens: number
+  /** Rounded cache-hit percent of the billed input; null when nothing was billed. */
+  cachePercent: number | null
+  /** Rounded context occupancy percent; null until pressure and capacity are both known. */
+  contextPercent: number | null
+}
+
+/**
+ * Fold a session row's metadata figures from the list-published projection
+ * values — the same durable values the context card and stats strip read, so
+ * the sidebar never parses session logs. All three figures are display
+ * rounding only; the authoritative computation stays with the host
+ * projections.
+ * @param projectionValues - the row's current projection values.
+ * @returns the metadata figures, or null when no projection value exists.
+ */
+export function sessionRowMetrics(
+  projectionValues: Readonly<Partial<SessionProjectionMap>> | undefined,
+): SessionRowMetrics | null {
+  const usage = projectionValues?.tokenUsage
+  const pressure = projectionValues?.contextPressure
+  if (usage === undefined && pressure === undefined) return null
+  const billedTokens = usage === undefined
+    ? 0
+    : usage.uncachedInputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
+  const cachePercent = usage === undefined || billedTokens === 0
+    ? null
+    : Math.round(usage.cacheReadTokens / billedTokens * 100)
+  const usedTokens = pressure?.projectedTokens ?? pressure?.pressureTokens
+  const contextPercent = usedTokens === undefined || pressure?.contextWindow === undefined
+    ? null
+    : Math.min(100, Math.round(usedTokens / pressure.contextWindow * 100))
+  return { billedTokens, cachePercent, contextPercent }
 }
 
 /** Session order selected by the Workspace browser. */
@@ -224,6 +268,7 @@ function sessionNode(
     completed: s.completed === true,
     updatedAt: s.updatedAt,
     ...(s.pendingInteraction === undefined ? {} : { pendingInteraction: s.pendingInteraction }),
+    ...(s.projectionValues === undefined ? {} : { projectionValues: s.projectionValues }),
   }
 }
 

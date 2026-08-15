@@ -13,6 +13,8 @@ import type { ListingCandidate } from '../src/index.ts'
 let root: string
 let capability: DirectoryPickerBrowseCapability
 let dispose: () => Promise<void>
+/** Whether this platform allows the file symlink fixture (Windows denies unprivileged file symlinks). */
+let fileLinkWorks = false
 
 beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), 'dsh-browse-'))
@@ -20,14 +22,15 @@ beforeAll(async () => {
   await mkdir(join(root, 'projects', 'harness'))
   await mkdir(join(root, '.hidden-dir'))
   await writeFile(join(root, 'notes.txt'), 'not a directory')
+  await writeFile(join(root, '.env'), 'hidden file')
   await symlink(join(root, 'projects'), join(root, 'linked'), 'junction')
   await symlink(join(root, 'gone'), join(root, 'broken'), 'junction')
   try {
     await symlink(join(root, 'notes.txt'), join(root, 'file-link'))
+    fileLinkWorks = true
   } catch {
     // Windows denies unprivileged file symlinks; the file-link row only
-    // feeds the POSIX lanes' coverage of the symlink-to-file arm, and every
-    // assertion below expects it to be filtered out anyway.
+    // feeds the POSIX lanes' coverage of the symlink-to-file arm.
   }
 
   const ctx = new Context()
@@ -45,16 +48,26 @@ afterAll(async () => {
 })
 
 describe('BrowseDirectoryPicker', () => {
-  it('lists directories only, flags hidden rows, follows symlinks, skips broken links, sorts by name', async () => {
+  it('lists directories and files separately, flags hidden rows, follows symlinks, skips broken links, sorts by name', async () => {
     const listing = await capability.list(root)
     expect(listing.path).toBe(root)
     expect(listing.home).toBe(homedir())
     expect(listing.entries.map(entry => entry.name)).toEqual(['.hidden-dir', 'linked', 'projects'])
     expect(listing.entries.map(entry => entry.hidden)).toEqual([true, false, false])
+    // Files ride their own name-sorted head: regular files plus the
+    // symlink-to-file row on platforms that allow the fixture.
+    expect(listing.files?.map(entry => entry.name)).toEqual(
+      fileLinkWorks ? ['.env', 'file-link', 'notes.txt'] : ['.env', 'notes.txt'],
+    )
+    expect(listing.files?.map(entry => entry.hidden)).toEqual(
+      fileLinkWorks ? [true, false, false] : [true, false],
+    )
     // Every entry path is absolute and host-joined — clients never join segments.
     expect(listing.entries.every(entry => entry.path === join(root, entry.name))).toBe(true)
+    expect(listing.files?.every(entry => entry.path === join(root, entry.name))).toBe(true)
     // Well under the default bound: the complete level, not a cut one.
     expect(listing.truncated).toBe(false)
+    expect(listing.filesTruncated).toBe(false)
   })
 
   it('cuts a level at maxEntries keeping the name-sorted head, and flags the cut', async () => {
@@ -67,10 +80,15 @@ describe('BrowseDirectoryPicker', () => {
       const cut = await bounded.list(root)
       expect(cut.entries.map(entry => entry.name)).toEqual(['.hidden-dir'])
       expect(cut.truncated).toBe(true)
+      // The file head is cut by the same bound, independently of directories.
+      expect(cut.files?.map(entry => entry.name)).toEqual(['.env'])
+      expect(cut.filesTruncated).toBe(true)
       // Exactly at the bound is complete, not truncated.
       const exact = await bounded.list(join(root, 'projects'))
       expect(exact.entries.map(entry => entry.name)).toEqual(['harness'])
       expect(exact.truncated).toBe(false)
+      expect(exact.files).toEqual([])
+      expect(exact.filesTruncated).toBe(false)
       // A level that fits the window but exceeds the bound (two rows, bound
       // one): the in-window extra row proves the cut without any eviction.
       await mkdir(join(root, 'projects', 'harness', 'a'))

@@ -2968,11 +2968,19 @@ export function createApiProxy(ctx: Context, defaults: ApiProxyDefaults): ApiPro
 
       async listDirectory(request, signal) {
         const capability = ctx.directoryPicker.capability()
-        if (capability.kind !== 'browse') {
+        // Read the discriminant before the listing-primitive probe: the
+        // capability union is merge-extensible, so a future kind may omit
+        // `list` and the refusal must still name the backend it met.
+        const kind = capability.kind
+        // Every current backend serves the shared one-level listing (the
+        // native interaction lists too, so the Files tree works regardless of
+        // which picker the adaptive chooser resolved); createDirectory stays
+        // browse-only.
+        if (!('list' in capability)) {
           return err(request, {
             code: 'directory-picker-unavailable',
-            message: `host.listDirectory needs the browse capability; the composed picker serves "${capability.kind}"`,
-            details: { capability: capability.kind },
+            message: `host.listDirectory needs a listing-capable backend; the composed picker serves "${kind}"`,
+            details: { capability: kind },
           })
         }
         try {

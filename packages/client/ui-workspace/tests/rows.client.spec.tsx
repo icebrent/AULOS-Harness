@@ -65,11 +65,14 @@ describe('workspace browser rows', () => {
     const view = render(<SessionNodeItem node={idle} currentId={undefined} now={0} onOpen={vi.fn()}
       onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} flat t={t} />)
     const title = screen.getByText('Flat Session')
-    expect(title.previousElementSibling).toBeNull()
+    // The title rides the session-main column; the leading status slot is
+    // that column's previous sibling.
+    expect(title.parentElement!.previousElementSibling).toBeNull()
 
     view.rerender(<SessionNodeItem node={{ ...idle, running: true }} currentId={undefined} now={0}
       onOpen={vi.fn()} onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} flat t={t} />)
-    expect(screen.getByText('Flat Session').previousElementSibling?.querySelector('[data-state="ongoing"]')).toBeTruthy()
+    expect(screen.getByText('Flat Session').parentElement!.previousElementSibling
+      ?.querySelector('[data-state="ongoing"]')).toBeTruthy()
   })
 
   it('renders a selected content-search row and opens only its session', () => {
@@ -511,5 +514,70 @@ describe('workspace browser rows', () => {
         onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} drag={after} t={t} />,
     )
     expect(screen.getByRole('treeitem').className).toMatch(/dropAfter/)
+  })
+})
+
+describe('session row metadata', () => {
+  const metaNode: SessionNode = {
+    id: sid('meta'), title: 'Meta Session', blank: false, running: false,
+    runningSubagentCount: 0, completed: false, updatedAt: 0,
+    projectionValues: {
+      tokenUsage: {
+        uncachedInputTokens: 59_000_000, outputTokens: 304_000,
+        cacheReadTokens: 41_000_000, cacheWriteTokens: 0,
+      },
+      contextPressure: { projectedTokens: 601_000, contextWindow: 1_000_000 },
+    },
+  }
+
+  it('renders tokens, cache hit, and context occupancy with a progress bar', () => {
+    const view = render(
+      <SessionNodeItem node={metaNode} currentId={undefined} now={0} onOpen={vi.fn()}
+        onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} t={t} />,
+    )
+    // Billed input = 59M + 41M + 0; cache hit = 41 / 100; context = 60%.
+    expect(screen.getByText('100M')).toBeTruthy()
+    // Label and semibold figure are sibling spans of one visible figure pair.
+    expect(screen.getByText('Cache').parentElement?.textContent).toContain('41%')
+    expect(screen.getByText('Context').parentElement?.textContent).toContain('60%')
+    // The value rides its own semibold span; the bar fill stays a hairline.
+    const value = screen.getByText('100M')
+    expect(value.className).toContain('metaValue')
+    const fill = view.container.querySelector('span[style*="width: 60%"]')
+    expect(fill).not.toBeNull()
+  })
+
+  it('drops figures whose projection facts are absent', () => {
+    const partial: SessionNode = {
+      ...metaNode,
+      projectionValues: {
+        tokenUsage: { uncachedInputTokens: 1_000, outputTokens: 200, cacheReadTokens: 0, cacheWriteTokens: 0 },
+        contextPressure: { pressureTokens: 500 },
+      },
+    }
+    render(
+      <SessionNodeItem node={partial} currentId={undefined} now={0} onOpen={vi.fn()}
+        onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} t={t} />,
+    )
+    expect(screen.getByText('1K')).toBeTruthy()
+    // Zero cache reads of a billed input is a truthful 0%, not an absent fact.
+    expect(screen.getByText('Cache').parentElement?.textContent).toContain('0%')
+    // Pressure without a route capacity: occupancy unknown, so the context
+    // figure drops out.
+    expect(screen.queryByText(/^Context /)).toBeNull()
+  })
+
+  it('renders no metadata line without projection values', () => {
+    const bare: SessionNode = {
+      id: metaNode.id, title: metaNode.title, blank: false, running: false,
+      runningSubagentCount: 0, completed: false, updatedAt: 0,
+    }
+    render(
+      <SessionNodeItem node={bare} currentId={undefined} now={0} onOpen={vi.fn()}
+        onRename={vi.fn()} onFork={vi.fn()} onArchive={vi.fn()} t={t} />,
+    )
+    expect(screen.queryByText(/^Cache /)).toBeNull()
+    expect(screen.queryByText(/^Context /)).toBeNull()
+    expect(screen.getByText('Meta Session')).toBeTruthy()
   })
 })

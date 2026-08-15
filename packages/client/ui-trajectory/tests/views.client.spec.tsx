@@ -172,7 +172,10 @@ function standaloneProps(
 }
 
 /** Real-stack bench: root Context + real SlotRegistry ring + the plugin fiber. */
-async function bench(snapshot = historySnapshot(NODES)) {
+async function bench(
+  snapshot = historySnapshot(NODES),
+  extraChildren: Record<string, unknown> = {},
+) {
   const ctx = new Context()
   const slots = new SlotRegistry(ctx)
   const loadOlder = vi.fn(() => Promise.resolve())
@@ -191,7 +194,10 @@ async function bench(snapshot = historySnapshot(NODES)) {
   // The conversation entry's role: declare the ring, then seed the chat entry.
   slots.register({
     name: 'root',
-    children: { 'conversation.view': { kind: 'list', scope: 'session' } },
+    children: {
+      'conversation.view': { kind: 'list', scope: 'session' },
+      ...extraChildren,
+    },
   }, (_p: { renderSlot?: unknown }) => null)
   const chatBody = vi.fn(() => <div data-testid="chat-body" />)
   slots.register(
@@ -230,10 +236,14 @@ function mount(slots: SlotRegistry, nodes: ConversationSnapshot['nodes'] = NODES
   const inputActions = {
     setDraft: vi.fn(), addImages: vi.fn(), removeImage: vi.fn(), pruneImages: vi.fn(), submit: vi.fn(),
   }
+  // Records every render-slot dispatch so tests can pin the bottom region's
+  // gating (chat view renders it; the full trajectory tab does not).
+  const renderLog: string[] = []
   // Minimal outlet twin: resolve the ring entry by the `only` filter and
   // render it with the session standard kit (what SlotOutlet does for a
   // list-kind session slot, minus machinery).
   const renderSlot = ((key: string, _owner: object, opts?: { only?: string }): ReactNode => {
+    renderLog.push(key)
     const entry = slots.entries('conversation.view').find(e => e.options.id === opts?.only)
     if (entry === undefined) return null
     const View = entry.component as FC<ConvViewProps>
@@ -277,7 +287,7 @@ function mount(slots: SlotRegistry, nodes: ConversationSnapshot['nodes'] = NODES
           useInput={useInput}
           inputActions={inputActions}
           open={vi.fn()}
-          toggleInspector={vi.fn()}
+          toggleFiles={vi.fn()}
           t={tConversation}
         />
         <ConversationSession
@@ -301,6 +311,7 @@ function mount(slots: SlotRegistry, nodes: ConversationSnapshot['nodes'] = NODES
     ),
     // The chat store handle, so tests switch the view ring without tabs.
     chat,
+    renderLog,
   }
 }
 
@@ -365,6 +376,55 @@ describe('plugin registration', () => {
       b.sessionStore.set(historySnapshot([...NODES]))
     })
     expect(await injected.loadOlder()).toBe(true)
+  })
+})
+
+describe('bottom panel registration and gating', () => {
+  it('registers the panel when the session body declares the bottom region, sharing the duration preference', async () => {
+    const b = await bench(
+      historySnapshot(NODES),
+      { 'conversation.session.bottom': { kind: 'single', scope: 'session' } },
+    )
+    const entries = b.slots.entries('conversation.session.bottom')
+    expect(entries).toHaveLength(1)
+    expect(entries[0]!.locale).toBe('trajectory')
+    const injectPanel = entries[0]!.inject as unknown as (
+      sessionId: SessionId,
+    ) => TrajectoryViewInjected
+    const viewEntry = b.slots.entries('conversation.view')
+      .find(candidate => candidate.options.id === 'trajectory')
+    const injectView = viewEntry!.inject as unknown as (
+      sessionId: SessionId,
+    ) => TrajectoryViewInjected
+    // One browser-wide duration store across both surfaces.
+    expect(injectPanel(SID).hooks.duration).toBe(injectView(SID).hooks.duration)
+    // Fiber disposal removes the panel entry with the tab.
+    await b.fiber.dispose()
+    expect(b.slots.entries('conversation.session.bottom')).toHaveLength(0)
+  })
+
+  it('renders the bottom region beside chat and unmounts it on the full trajectory tab', async () => {
+    const b = await bench(
+      historySnapshot(NODES),
+      { 'conversation.session.bottom': { kind: 'single', scope: 'session' } },
+    )
+    const { chat, renderLog } = mount(b.slots)
+    // Chat view: the region renders after the view dispatch.
+    expect(renderLog).toContain('conversation.session.bottom')
+    const callsWithChat = renderLog.filter(key => key === 'conversation.session.bottom').length
+
+    openTrajectory(chat)
+    // Full trajectory tab: the bottom region is not dispatched any more (the
+    // same ledger must never render twice).
+    expect(
+      renderLog.filter(key => key === 'conversation.session.bottom').length,
+    ).toBe(callsWithChat)
+    expect(renderLog.at(-1)).toBe('conversation.view')
+
+    fireEvent.click(screen.getByRole('button', { name: '返回对话' }))
+    expect(
+      renderLog.filter(key => key === 'conversation.session.bottom').length,
+    ).toBe(callsWithChat + 1)
   })
 })
 

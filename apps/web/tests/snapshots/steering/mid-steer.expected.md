@@ -3,10 +3,12 @@
     - button "Use the ask_user_question tool to" [disabled]
   - img
   - text: Code
-  - button "Show or hide the inspector"
+  - button "Show or hide the Files panel"
+  - button "Full trajectory"
   - button "Session log":
     - text: Session log
     - img
+- group "Current session context figures": Context 6% 7.9K / 128K Tokens 7.8K / 115 Input / Output Cache 98% 7.7K / 0 TTFT {{duration}} {{throughput}} tok/s
 - text: Use the ask_user_question tool to ask me exactly one question with id "checkpoint", question "Ready to continue?", header "Checkpoint", and options labeled "Yes" and "No". After I answer, reply with one short sentence acknowledging my answer and stop. {{clock}}
 - button "Copy":
   - img
@@ -21,6 +23,9 @@
 - status: Working… ask_user_question 1 tools
 - text: "Interjection: include the word BANANA in your final reply."
 - button "Copy":
+  - img
+- button "Expand trajectory panel":
+  - text: Trajectory
   - img
 - region "Ready to continue?":
   - text: Checkpoint

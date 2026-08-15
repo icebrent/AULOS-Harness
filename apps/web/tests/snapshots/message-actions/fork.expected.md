@@ -2,6 +2,6 @@
   - treeitem "Ungrouped" [expanded]:
     - img
     - text: Ungrouped
-  - treeitem "Use the read tool twice (2) now" [selected]
-  - treeitem "Use the read tool twice (1) now"
-  - treeitem "Use the read tool twice 1min"
+  - treeitem "Use the read tool twice (2) 7.8K Cache 98% now" [selected]
+  - treeitem "Use the read tool twice (1) 7.8K Cache 98% now"
+  - treeitem "Use the read tool twice 7.8K Cache 98% 1min"

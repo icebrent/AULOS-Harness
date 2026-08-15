@@ -45,6 +45,17 @@ const PLUGINS: readonly (WebBootEntry & { bundlePath: string })[] = [
   },
   { id: '@deepseek-ai/dsh-session-log-export', bundlePath: 'packages/session-query/session-log-export/lib/client.js', url: '/plugins/session-log-download.js', rev: 'fx', inject: ['@deepseek-ai/dsh-client-ui-commands', '@deepseek-ai/dsh-client-ui-conversation'] },
   { id: '@deepseek-ai/dsh-client-ui-trajectory', bundlePath: 'packages/client/ui-trajectory/lib/client.js', url: '/plugins/ui-trajectory.js', rev: 'fx', inject: ['@deepseek-ai/dsh-client-ui-conversation'] },
+  {
+    id: '@deepseek-ai/dsh-client-ui-files',
+    bundlePath: 'packages/client/ui-files/lib/client.js',
+    url: '/plugins/ui-files.js',
+    rev: 'fx',
+    inject: [
+      '@deepseek-ai/dsh-client-runtime',
+      '@deepseek-ai/dsh-client-ui-layout',
+      '@deepseek-ai/dsh-client-locale',
+    ],
+  },
 ]
 
 const bundles = new Map(PLUGINS.map(plugin => [

@@ -2,6 +2,8 @@
 
 Status: implemented
 
+English | [中文](2026-08-14-chat-code-dual-mode-new-session-ui.zh.md)
+
 ## Problem
 
 The new-session screen led with a flat list of agent presets (Standard, Code Mode, Minimal, Creator, plus user-authored ones), which put the full roster in front of a user whose actual choice is between two working modes: a conversational workspace-aware agent (`workspace-chat`) and the full coding agent (`standard`). The session header likewise named the preset, exposing internal preset ids to users who think in modes.

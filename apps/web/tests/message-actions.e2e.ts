@@ -133,9 +133,9 @@ describe('web e2e: message IconActions and clocks on settled history', () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-message-actions-aria'))
     await page.getByRole('button', { name: /^Select model, current/ })
       .waitFor({ timeout: 10_000 })
-    // The v2 stats surface: the inspector's Context tab carries the cache
-    // figures the removed composer strip used to show.
-    await page.getByText(/Hit rate/u).first().waitFor({ timeout: 10_000 })
+    // The compact Context Card carries the cache figure the removed inspector
+    // Context tab used to show.
+    await page.getByText('Cache', { exact: true }).first().waitFor({ timeout: 10_000 })
     // Keep a footer focused so opacity-hidden actions stay in the a11y tree
     // as an active/focused control during the capture.
     await page.getByRole('button', { name: 'Copy' }).first().focus()

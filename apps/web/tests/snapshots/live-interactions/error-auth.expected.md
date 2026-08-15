@@ -3,7 +3,8 @@
     - button "Reply with a one-sentence description" [disabled]
   - img
   - text: Code
-  - button "Show or hide the inspector"
+  - button "Show or hide the Files panel"
+  - button "Full trajectory"
   - button "Session log":
     - text: Session log
     - img
@@ -17,6 +18,9 @@
 - status:
   - text: This turn failedAPI key is invalid
   - code: AUTH
+- button "Expand trajectory panel":
+  - text: Trajectory
+  - img
 - textbox "Message the agent"
 - button "Commands":
   - img
@@ -25,3 +29,4 @@
   - text: DeepSeek-V4-Flash
   - img
 - button "Send message" [disabled]
+- text: 1 turns · 1 steps

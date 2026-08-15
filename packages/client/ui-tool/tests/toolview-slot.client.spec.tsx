@@ -18,7 +18,7 @@ import { LocaleRuntime } from '@deepseek-ai/dsh-client-locale/client'
 import { apply as applyConversation, inject as injectConversation } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { apply as applyTool, inject as injectTool } from '@deepseek-ai/dsh-client-ui-tool/client'
 import type { ToolCallViewProps } from '@deepseek-ai/dsh-client-ui-tool/client'
-import { toolChatSnapshot } from './tool-details-render.client.tsx'
+import { toolChatSnapshot } from './tool-chat-snapshot.client.ts'
 
 const SID = 's1' as SessionId
 

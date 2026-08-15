@@ -4,7 +4,8 @@
 // program with several sub-calls, and the UI must render the code-variant
 // parent row with its nested sub-rows behind the settled turn's expanded
 // activity fold — each sub-row the same component a native call renders
-// through — plus inspector resolution for a clicked sub-row. Drive steps wait
+// through — plus the Files-column track surviving a clicked sub-row. Drive
+// steps wait
 // only on generic completion (whenTurnSettled); assertion steps run in
 // replay/refresh only.
 // Record: DSH_SNAPSHOT=record rewrites session.jsonl, then a keyless
@@ -123,15 +124,19 @@ describe('web e2e: Code Mode round renders nested sub-calls', () => {
     expect(await nest.locator('[data-state="error"]').count()).toBeGreaterThanOrEqual(1)
   }, 60_000)
 
-  it.skipIf(MODE === 'record')('a bash sub-row click switches the inspector to the embedded tool view', async () => {
+  it.skipIf(MODE === 'record')('a bash sub-row click highlights the row without opening an embedded tool view', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-code-mode-details'))
     const nest = page.locator('[data-subcalls]').first()
     const frame = page.locator('[style*="grid-template-columns"]').first()
-    // The v2 inspector column is open by default; tool-row clicks show the
-    // embedded details inside it without changing the column geometry.
+    // The Files column is open by default; a tool-row click must not change
+    // its track (the embedded tool-details view is gone — args/result live in
+    // trajectory now).
     expect(await frame.getAttribute('data-details-collapsed')).toBeNull()
     await nest.locator('[data-sample="bash"]').first().click()
     await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBeNull()
+    // No embedded tool view mounted inside the column: the Files tree is the
+    // column's only occupant.
+    await expect.poll(() => page.getByRole('tree', { name: 'Files' }).count(), { timeout: 5_000 }).toBe(1)
     // Fold the activity again so the aria golden captures the quiet collapsed
     // state the product ships.
     await page.getByRole('button', { name: /Completed · \d+ tools/ }).first().click()

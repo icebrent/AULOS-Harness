@@ -1,6 +1,6 @@
 // Web e2e scenario: the input card holds one horizontal position across the
-// conversation and full-trajectory views (the v2 view ring: the trajectory
-// opens from the inspector's Activity panel, the back bar returns).
+// conversation and full-trajectory views (the trajectory opens from the
+// header's Full trajectory utility, the back bar returns).
 //
 // The composer seat is the same node in both tabs, but it measures itself
 // against a different edge in each (see

@@ -11,7 +11,7 @@ import Storage from '@deepseek-ai/dsh-storage'
 import { DomainFacility } from '@deepseek-ai/dsh-storage-domain'
 import UserQuestionService from '@deepseek-ai/dsh-user-questions'
 import { DirectoryPickerError } from '@deepseek-ai/dsh-host-directory-picker'
-import type { DirectoryPickerCapability } from '@deepseek-ai/dsh-host-directory-picker'
+import type { DirectoryPickerBrowseCapability, DirectoryPickerCapability, DirectoryPickerNativeCapability } from '@deepseek-ai/dsh-host-directory-picker'
 import WorkspaceRegistry from '@deepseek-ai/dsh-workspace'
 import type { HostFrame, WorkspaceId } from '@deepseek-ai/dsh-host-apiproxy/api'
 import type { RpcRequest, RpcResponse } from '@deepseek-ai/dsh-host-apiproxy/api/rpc'
@@ -60,7 +60,7 @@ function stubAgent(session: Session): Agent {
 /** Compose the API over real Session, Agent, Storage, Domain, and Workspace services. */
 async function harness(
   root = realpathSync.native(mkdtempSync(join(tmpdir(), 'dsh-apiproxy-workspace-'))),
-  picker: DirectoryPickerCapability = { kind: 'native', pick: async () => null },
+  picker: DirectoryPickerCapability = NATIVE_STUB,
   extras: {
     openPath?: (path: string, signal: AbortSignal) => Promise<void>
     canOpenPath?: () => boolean
@@ -120,18 +120,18 @@ function stageDir(root: string, name: string): string {
 
 describe('host.pickDirectory', () => {
   it('returns a selected path or explicit cancellation from the native capability', async () => {
-    const selected = await harness(undefined, { kind: 'native', pick: async () => '/tmp/project' })
+    const selected = await harness(undefined, { ...NATIVE_STUB, pick: async () => '/tmp/project' })
     expect((await selected.api.host.pickDirectory(request({}), new AbortController().signal)).result)
       .toEqual({ ok: true, value: { path: '/tmp/project' } })
 
-    const cancelled = await harness(undefined, { kind: 'native', pick: async () => null })
+    const cancelled = await harness(undefined, { ...NATIVE_STUB, pick: async () => null })
     expect((await cancelled.api.host.pickDirectory(request({}), new AbortController().signal)).result)
       .toEqual({ ok: true, value: { path: null } })
   })
 
   it('propagates abort into the native capability as a cancelled RPC error', async () => {
     const { api } = await harness(undefined, {
-      kind: 'native',
+      ...NATIVE_STUB,
       pick: signal => new Promise((_resolve, reject) => {
         signal.addEventListener('abort', () => { reject(new Error('aborted')) }, { once: true })
       }),
@@ -143,7 +143,7 @@ describe('host.pickDirectory', () => {
   })
 
   it('folds a non-abort native-chooser failure into an internal error', async () => {
-    const { api } = await harness(undefined, { kind: 'native', pick: async () => { throw new Error('no chooser installed') } })
+    const { api } = await harness(undefined, { ...NATIVE_STUB, pick: async () => { throw new Error('no chooser installed') } })
     const response = await api.host.pickDirectory(request({}), new AbortController().signal)
     expect(response.result).toMatchObject({ ok: false, error: { code: 'internal' } })
   })
@@ -158,8 +158,24 @@ describe('host.pickDirectory', () => {
   })
 })
 
+/** Canned native capability: the chooser plus the shared level listing every native backend serves. */
+const NATIVE_STUB: DirectoryPickerNativeCapability = {
+  kind: 'native',
+  pick: async () => null,
+  list: async (path) => {
+    const target = path ?? '/home/user'
+    return {
+      path: target,
+      home: '/home/user',
+      crumbs: [{ name: '/', path: '/', hidden: false }],
+      entries: [],
+      truncated: false,
+    }
+  },
+}
+
 /** Canned browse capability: one listing, one created path, typed failures on demand. */
-const BROWSE_STUB: DirectoryPickerCapability = {
+const BROWSE_STUB: DirectoryPickerBrowseCapability = {
   kind: 'browse',
   list: async (path) => {
     if (path === '/denied') throw new DirectoryPickerError('directory-unreadable', '/denied', 'cannot list /denied')
@@ -217,12 +233,21 @@ describe('host.listDirectory / host.createDirectory', () => {
     expect((await pending).result).toMatchObject({ ok: false, error: { code: 'cancelled' } })
   })
 
-  it('refuses the browse RPCs under a native composition', async () => {
-    const { api } = await harness()
-    expect((await api.host.listDirectory(request({}), new AbortController().signal)).result).toMatchObject({
+  it('serves listings through the native capability too, and keeps creation browse-only', async () => {
+    const { api } = await harness(undefined, NATIVE_STUB)
+    const listed = await api.host.listDirectory(request({ path: '/home/user/docs' }), new AbortController().signal)
+    expect(listed.result).toMatchObject({ ok: true, value: { path: '/home/user/docs' } })
+    expect((await api.host.createDirectory(request({ path: '/x', name: 'y' }))).result).toMatchObject({
       ok: false, error: { code: 'directory-picker-unavailable', details: { capability: 'native' } },
     })
-    expect((await api.host.createDirectory(request({ path: '/x', name: 'y' }))).result).toMatchObject({
+  })
+
+  it('refuses listings under a backend that serves no list primitive', async () => {
+    const { api } = await harness(
+      undefined,
+      { kind: 'native', pick: async () => null } as unknown as DirectoryPickerCapability,
+    )
+    expect((await api.host.listDirectory(request({}), new AbortController().signal)).result).toMatchObject({
       ok: false, error: { code: 'directory-picker-unavailable', details: { capability: 'native' } },
     })
   })

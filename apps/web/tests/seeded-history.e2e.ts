@@ -392,7 +392,7 @@ describe('web e2e: seeded history renders through cold resume', () => {
     await expect.poll(() => disclosure.getAttribute('aria-expanded')).toBe('false')
   })
 
-  it.skipIf(MODE === 'record')('file-path tool rows rebuilt from the cold log keep the inspector track', async () => {
+  it.skipIf(MODE === 'record')('file-path tool rows rebuilt from the cold log keep the Files track', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-seeded-toolrow'))
     // Interaction over cold-resumed history: read summaries are host-open
     // file links (not expand-in-place / not details). Runs after the golden
@@ -406,8 +406,8 @@ describe('web e2e: seeded history renders through cold resume', () => {
     }
     await fileLink.waitFor({ timeout: 10_000 })
     const frame = page.locator('[style*="grid-template-columns"]').first()
-    // The v2 inspector column is open by default; the host-open link must not
-    // change its track.
+    // The Files column is open by default; the host-open link must not change
+    // its track (the embedded tool-details view is gone).
     expect(await frame.getAttribute('data-details-collapsed')).toBeNull()
     await fileLink.click()
     await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBeNull()

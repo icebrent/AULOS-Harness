@@ -5,12 +5,16 @@
     - button "event-sourcing researcher"
     - text: /
     - button "example editor" [disabled]
-  - button "Show or hide the inspector"
+  - button "Show or hide the Files panel"
+  - button "Full trajectory"
   - button "Session log":
     - text: Session log
     - img
 - text: Give one concrete event sourcing example. {{clock}}
 - button "Copy":
+  - img
+- button "Expand trajectory panel":
+  - text: Trajectory
   - img
 - status:
   - strong: This subagent is read-only for now

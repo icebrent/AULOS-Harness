@@ -1,0 +1,105 @@
+/* Bottom trajectory panel: a collapsed one-line bar above the composer's
+   column floor, expanding to a drag-resizable surface that hosts the shared
+   trajectory body. Track-level transitions pause while the user drags the
+   height handle. */
+
+.collapsed {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--dsw-alias-border-faint);
+  background: var(--dsw-alias-surface);
+}
+
+.collapsedButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.collapsedButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.collapsedLabel {
+  font-weight: 600;
+}
+
+.root {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-top: 1px solid var(--dsw-alias-border-soft);
+  background: var(--dsw-alias-surface);
+  /* The shared body's ledger clearance: no composer inside the panel. */
+  --dsh-trajectory-bottom-clearance: 16px;
+  transition: height 150ms var(--ds-ease-in-out);
+}
+
+.root[data-dragging] {
+  transition: none;
+}
+
+.handle {
+  flex: none;
+  height: 5px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.handle:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+  padding: 0 8px 0 12px;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+
+.collapse:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}

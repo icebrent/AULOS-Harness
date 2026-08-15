@@ -1,74 +1,35 @@
-# DeepSeek Harness
+# AULOS HARNESS
 
 [English](README.md) | 中文
 
-DeepSeek Harness（`dsh`）是由 [DeepSeek AI](https://deepseek.com) 开发的开源 agent harness（智能体框架）。
+**Orchestrate Intelligence.**
 
-它采用**一切皆插件**的架构，并由 [Cordis](https://github.com/cordiverse/cordis) 驱动，其设计参见论文 [_A Programming Paradigm for Spatiotemporal Composability_](https://github.com/cordiverse/paper)。
+*The Power of AI, Harnessed.*
 
-## 开发者预览
+AULOS HARNESS 是一个基于 DeepSeek Harness 构建的自定义 AI Workspace。
 
-DeepSeek Harness 目前处于 _开发者预览_ 阶段，正在快速迭代。**未来将出现破坏兼容性的变更。**
+它保留 Harness 的 agent/runtime 能力，同时重新设计了产品呈现方式，让对话、代码、工具和项目上下文围绕当前任务组织起来，形成一个更安静、更偏 conversation-first 的个人 AI 工作空间。
 
-## 运行
+## 有什么不同
 
-### 通过 `npm` 运行
+- **Chat / Code 工作模式**：将主要使用方式收敛为 Chat 与 Code，高级 preset 保留在 More 中。
+- **Conversation-first 工作区**：采用更克制、偏 macOS 风格的界面，让对话和当前任务成为主内容，减少原版偏开发者工具的视觉噪音。
+- **Context / Activity Inspector**：上下文、token、运行状态和工具活动集中在右侧 Inspector，保留可观测性，但不占据主对话流。
+- **工具活动折叠**：中间工具调用和 agent 工作过程默认折叠，最终回答和用户消息保持视觉主导。
+- **AULOS 品牌与产品方向**：在 Harness runtime 基础上建立独立的视觉身份和 Workspace 产品方向。
 
-安装 `Node.js`，然后运行：
+## 项目状态
 
-```sh
-npx @deepseek-ai/dsh web
-```
+AULOS HARNESS 是一个个人维护的 custom build，目前仍在持续开发。
 
-该命令会启动 Web UI，默认地址为 `http://127.0.0.1:3080`。详见 [Web UI 指南](docs/user/guide/index.md)。
+项目会在合适的时候跟进 DeepSeek Harness upstream，但会保留自己的产品、交互和视觉方向。
 
-### 从源码运行
+## 上游项目
 
-如需从仓库源码运行：
+AULOS HARNESS 基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)。
 
-```sh
-git clone https://github.com/deepseek-ai/deepseek-harness.git
-cd deepseek-harness
-pnpm install
-pnpm run build
-pnpm dsh web
-```
+原版 Harness 的安装、使用、架构、开发说明等详细资料，请直接参考官方仓库。
 
-## 社区与支持
+## License
 
-- 欢迎通过 [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions) 提交反馈或 bug 报告。
-- 为你的插件仓库添加 [`dsh-plugin`](https://github.com/topics/dsh-plugin) 话题，便于被发现。
-- 欢迎加入 DeepSeek Harness 企微群：扫码添加企微小助手并填写入群问卷，完成后小助手会邀请你入群。
-
-<table>
-  <thead>
-    <tr>
-      <th align="center">企微小助手</th>
-      <th align="center">入群问卷</th>
-      <th align="center">微信公众号</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td align="center"><img src="assets/community-wecom-assistant.png" alt="DeepSeek Harness 企微小助手二维码" width="180" height="180"></td>
-      <td align="center"><a href="https://trtgsjkv6r.feishu.cn/share/base/form/shrcnIt5twSVdLGD52KJBckGCgg"><img src="assets/community-wecom-survey.png" alt="DeepSeek Harness 入群问卷二维码" width="180" height="180"></a></td>
-      <td align="center"><img src="assets/community-wechat-official-account.png" alt="DeepSeek Harness 团队微信公众号二维码" width="180" height="180"></td>
-    </tr>
-  </tbody>
-</table>
-
-## 参与贡献
-
-参见 [CONTRIBUTING.md](CONTRIBUTING.md)。
-
-## 开发
-
-请先阅读[开发指南](docs/development.md)与[架构文档](docs/architecture.md)。
-
-面向 agent：请遵循 [AGENTS.md](AGENTS.md)。
-
-## 许可证
-
-[MIT](LICENSE)
-
-第三方依赖及其许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+本项目继续遵循 upstream 的 [MIT License](LICENSE)。

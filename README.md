@@ -1,57 +1,35 @@
-# DeepSeek Harness
+# AULOS HARNESS
 
 English | [中文](README.zh.md)
 
-DeepSeek Harness (`dsh`) is an open-source agent harness developed by [DeepSeek AI](https://deepseek.com).
+**Orchestrate Intelligence.**
 
-It uses an architecture where **everything is a plugin**, and is powered by [Cordis](https://github.com/cordiverse/cordis), whose design is described in [_A Programming Paradigm for Spatiotemporal Composability_](https://github.com/cordiverse/paper).
+*The Power of AI, Harnessed.*
 
-## Developer preview
+AULOS HARNESS is a custom AI Workspace built on DeepSeek Harness.
 
-DeepSeek Harness is currently in _developer preview_ and is iterating rapidly. **THERE WILL BE COMPATIBILITY-BREAKING CHANGES.**
+It keeps Harness's agent/runtime capabilities while redesigning the product presentation, organizing conversation, code, tools, and project context around the current task into a quieter, conversation-first personal AI workspace.
 
-## Run
+## What's different
 
-### Run from `npm`
+- **Chat / Code working modes**: The primary ways of working converge on Chat and Code, with advanced presets kept under More.
+- **Conversation-first workspace**: A restrained, macOS-style interface makes the conversation and the current task the main content, reducing the developer-tool visual noise of the original.
+- **Context / Activity Inspector**: Context, tokens, run status, and tool activity are gathered in the right-hand Inspector, keeping observability without dominating the main conversation flow.
+- **Collapsed tool activity**: Intermediate tool calls and agent work are collapsed by default, so final answers and user messages stay visually dominant.
+- **AULOS brand and product direction**: An independent visual identity and Workspace product direction built on the Harness runtime.
 
-Install `Node.js`, then run:
+## Status
 
-```sh
-npx @deepseek-ai/dsh web
-```
+AULOS HARNESS is a personally maintained custom build, still under active development.
 
-The command starts the Web UI, served at `http://127.0.0.1:3080` by default. See [Web UI guide](docs/user/guide/index.md).
+It follows the DeepSeek Harness upstream when appropriate, while keeping its own product, interaction, and visual direction.
 
-### Run from source
+## Upstream
 
-To run from a repository checkout:
+AULOS HARNESS is built on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 
-```sh
-git clone https://github.com/deepseek-ai/deepseek-harness.git
-cd deepseek-harness
-pnpm install
-pnpm run build
-pnpm dsh web
-```
-
-## Community and support
-
-- Feel free to submit feedback or bug reports through [GitHub Discussions](https://github.com/deepseek-ai/deepseek-harness/discussions).
-- Add the [`dsh-plugin`](https://github.com/topics/dsh-plugin) topic to your plugin repository for discoverability.
-- Join <a href="https://discord.gg/Ycq5dCaS4">DeepSeek Harness Discord community</a>.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Development
-
-Start with the [development guide](docs/development.md) and [architecture documentation](docs/architecture.md).
-
-For agents, follow [AGENTS.md](AGENTS.md).
+For the original Harness's installation, usage, architecture, and development documentation, refer directly to the official repository.
 
 ## License
 
-[MIT](LICENSE)
-
-Third-party dependencies and their licenses are disclosed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+This project continues to follow the upstream [MIT License](LICENSE).

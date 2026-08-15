@@ -17,13 +17,12 @@ exports[`sidebar shell snapshots > renders the collapsed rail after the crossfad
         class="iconButton toggle"
         type="button"
       >
-        <svg
-          aria-hidden="true"
+        <img
+          alt=""
           class="railFish"
-          data-content="965fe321"
-          fill="none"
-          height="17.6580310880829"
-          viewBox="0 0 23.16 17.04"
+          draggable="false"
+          height="24"
+          src="/branding/icon.png"
           width="24"
         />
         <svg
@@ -100,14 +99,29 @@ exports[`sidebar shell snapshots > renders the expanded column (wordmark, capsul
         class="brand wide"
         type="button"
       >
-        <svg
+        <span
           aria-hidden="true"
-          data-content="951274b9"
-          fill="none"
-          height="24"
-          viewBox="0 0 182 24"
-          width="182"
-        />
+          class="root"
+          style="--dsh-brand-wordmark-height: 24px;"
+        >
+          <img
+            alt=""
+            class="mark"
+            draggable="false"
+            src="/branding/icon.png"
+          />
+          <img
+            alt=""
+            class="aulos"
+            draggable="false"
+            src="/branding/aulos.png"
+          />
+          <span
+            class="badge"
+          >
+            HARNESS
+          </span>
+        </span>
       </button>
       <button
         aria-label="Collapse sidebar"
@@ -193,14 +207,29 @@ exports[`sidebar shell snapshots > renders the expanded column in the default lo
         class="brand wide"
         type="button"
       >
-        <svg
+        <span
           aria-hidden="true"
-          data-content="951274b9"
-          fill="none"
-          height="24"
-          viewBox="0 0 182 24"
-          width="182"
-        />
+          class="root"
+          style="--dsh-brand-wordmark-height: 24px;"
+        >
+          <img
+            alt=""
+            class="mark"
+            draggable="false"
+            src="/branding/icon.png"
+          />
+          <img
+            alt=""
+            class="aulos"
+            draggable="false"
+            src="/branding/aulos.png"
+          />
+          <span
+            class="badge"
+          >
+            HARNESS
+          </span>
+        </span>
       </button>
       <button
         aria-label="收起侧边栏"

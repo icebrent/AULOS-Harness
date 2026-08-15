@@ -66,3 +66,15 @@ describe('FishLogo', () => {
     expect(container.innerHTML).not.toContain('M0 0L23.16')
   })
 })
+
+describe('BrandMark', () => {
+  it('renders the shared branding image at the requested size', () => {
+    const { container } = render(<primitives.BrandMark size={40} className="x" />)
+    const img = container.querySelector('img')!
+    expect(img.getAttribute('src')).toBe('/branding/icon.png')
+    expect(img.getAttribute('alt')).toBe('')
+    expect(img.getAttribute('width')).toBe('40')
+    expect(img.getAttribute('height')).toBe('40')
+    expect(img.classList.contains('x')).toBe(true)
+  })
+})

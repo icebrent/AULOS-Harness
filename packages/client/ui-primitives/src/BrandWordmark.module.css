@@ -1,0 +1,53 @@
+/* AULOS HARNESS wordmark: mark + the full AULOS letterform image + ink-plate
+   HARNESS badge. The height is driven by the component's size prop through
+   the --dsh-brand-wordmark-height custom property; every other metric scales
+   from it, tuned to the 182x24 reference wordmark at size 24:
+   mark box 24x24, AULOS 15px tall, badge 53x15, gaps 5px / 8px. */
+
+.root {
+  display: flex;
+  align-items: center;
+  height: var(--dsh-brand-wordmark-height);
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* 24x24 box at the reference size; contain keeps the icon's own transparent
+   padding instead of shrinking the visible mark. */
+.mark {
+  flex: none;
+  width: var(--dsh-brand-wordmark-height);
+  height: var(--dsh-brand-wordmark-height);
+  object-fit: contain;
+}
+
+/* The AULOS letterforms are the brand image asset, not text; 15px display
+   height (ratio ~5:1 gives a ~75px width at the reference size). */
+.aulos {
+  flex: none;
+  display: block;
+  height: calc(var(--dsh-brand-wordmark-height) * 0.625);
+  width: auto;
+  object-fit: contain;
+  margin-left: calc(var(--dsh-brand-wordmark-height) * 0.2083);
+}
+
+.badge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: calc(var(--dsh-brand-wordmark-height) * 0.625);
+  width: calc(var(--dsh-brand-wordmark-height) * 2.2083);
+  margin-left: calc(var(--dsh-brand-wordmark-height) * 0.3333);
+  padding: 0;
+  border-radius: calc(var(--dsh-brand-wordmark-height) * 0.0833);
+  background: var(--dsw-alias-label-primary);
+  color: var(--dsw-alias-label-primary-inverted);
+  font-size: calc(var(--dsh-brand-wordmark-height) * 0.375);
+  font-weight: 700;
+  line-height: calc(var(--dsh-brand-wordmark-height) * 0.625);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}

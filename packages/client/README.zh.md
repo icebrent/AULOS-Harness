@@ -20,8 +20,10 @@ dsh web GUI 的浏览器侧：shell 启动、浏览器与宿主通信、共享 U
 | [`ui-attachment/`](ui-attachment/README.zh.md) | 注册输入框与消息图片的附件呈现。 |
 | [`ui-layout/`](ui-layout/README.zh.md) | 排列应用的主要区域。 |
 | [`ui-sidebar/`](ui-sidebar/README.zh.md) | 展示工作区与会话导航。 |
+| [`ui-brand-aulos/`](ui-brand-aulos/README.zh.md) | 为 AULOS build 填充通用浏览器品牌 slot。 |
 | [`ui-brand-official/`](ui-brand-official/README.zh.md) | 使用官方名称和标记填充通用浏览器品牌 slot。 |
 | [`ui-workspace/`](ui-workspace/README.zh.md) | 提供工作区选择与创建界面。 |
+| [`ui-files/`](ui-files/README.zh.md) | 在应用右栏展示当前 Workspace 的文件树。 |
 | [`ui-conversation/`](ui-conversation/README.zh.md) | 展示当前对话及其输入界面。 |
 | [`ui-tool/`](ui-tool/README.zh.md) | 编排工具调用树和按工具键控的视图。 |
 | [`ui-workflow-run/`](ui-workflow-run/README.zh.md) | 把持久工作流运行回放为 Chat 嵌套折叠项，并只为实时子 Session 提供导航。 |

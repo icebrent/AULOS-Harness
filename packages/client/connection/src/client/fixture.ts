@@ -1587,7 +1587,8 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
   // In-memory browse tree behind the fixture's `browse` picker capability —
   // deterministic content mirroring the design mock so assembled Web tests
   // and snapshots can walk it. Leaves are materialized lazily: a child listed
-  // by its parent lists as empty until something is created inside it.
+  // by its parent lists as empty until something is created inside it. Files
+  // ride the same lazily-materialized map, keyed by their parent directory.
   const directoryTree = new Map<string, string[]>([
     ['/', ['home']],
     ['/home', ['fixture']],
@@ -1597,6 +1598,11 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
       'deepseek-web', 'deepseek-harness', 'deepseek-app', 'deepseek-landing-blog',
     ]],
   ])
+  const fileTree = new Map<string, string[]>([
+    [FIXTURE_HOME, ['.env.example', 'README.md']],
+    [`${FIXTURE_HOME}/Documents/project`, ['README.md', 'index.ts', 'package.json']],
+    [`${FIXTURE_HOME}/Documents/deepseek-harness`, ['AGENTS.md', 'package.json']],
+  ])
   const childrenOf = (path: string): string[] | undefined => {
     const known = directoryTree.get(path)
     if (known !== undefined) return known
@@ -1604,6 +1610,7 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
     const name = path.slice(path.lastIndexOf('/') + 1)
     return directoryTree.get(parent)?.includes(name) === true ? [] : undefined
   }
+  const filesOf = (path: string): string[] => fileTree.get(path) ?? []
   const crumbsOf = (path: string): { name: string; path: string; hidden: boolean }[] => {
     const crumbs = [{ name: '/', path: '/', hidden: false }]
     let acc = ''
@@ -2635,8 +2642,11 @@ function createFixtureWorld(options: FixtureOptions): FixtureWorld {
           crumbs: crumbsOf(target),
           entries: [...children].sort((a, b) => a.localeCompare(b))
             .map(name => ({ name, path: target === '/' ? `/${name}` : `${target}/${name}`, hidden: name.startsWith('.') })),
+          files: filesOf(target).sort((a, b) => a.localeCompare(b))
+            .map(name => ({ name, path: target === '/' ? `/${name}` : `${target}/${name}`, hidden: name.startsWith('.') })),
           // The fixture tree is tiny; no level ever reaches a backend bound.
           truncated: false,
+          filesTruncated: false,
         })
       },
       createDirectory: (request) => {

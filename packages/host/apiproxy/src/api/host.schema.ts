@@ -48,6 +48,8 @@ export const hostListDirectoryValueSchema = z.object({
   crumbs: z.array(directoryEntrySchema),
   entries: z.array(directoryEntrySchema),
   truncated: z.boolean(),
+  files: z.array(directoryEntrySchema).optional(),
+  filesTruncated: z.boolean().optional(),
 }) satisfies z.ZodType<Wire<ResponseValue<'host.listDirectory'>>>
 
 /** host.createDirectory request payload: name must be one plain path segment. */

@@ -12,8 +12,12 @@
  */
 
 import { Context, Service } from '@deepseek-ai/cordis'
+import type { DirectoryListing } from './listing.ts'
 
-/** The native interaction: one OS directory chooser on the host display. */
+export { DirectoryPickerError, fullyQualified, ancestryCrumbs, boundedInsert, listDirectoryLevel, listDirectory, raceAbort } from './listing.ts'
+export type { DirectoryEntry, DirectoryPickerErrorCode, ListLevel, ListingCandidate, DirectoryListing } from './listing.ts'
+
+/** The native interaction: one OS directory chooser on the host display, plus the shared bounded level listing. */
 export interface DirectoryPickerNativeCapability {
   kind: 'native'
   /**
@@ -22,37 +26,18 @@ export interface DirectoryPickerNativeCapability {
    * @returns the chosen absolute path, or null when the operator cancels.
    */
   pick(signal: AbortSignal): Promise<string | null>
-}
-
-/** One directory row: a listing child or a breadcrumb ancestor. */
-export interface DirectoryEntry {
-  /** Base name shown in a browser row (a root crumb carries its full path). */
-  name: string
-  /** Absolute host path — clients never join path segments themselves. */
-  path: string
-  /** Hidden by the host platform's convention (dot-prefixed on POSIX); the client owns whether to show it. */
-  hidden: boolean
-}
-
-/** One directory level plus its ancestry, as a browse backend reports it. */
-export interface DirectoryListing {
-  /** Absolute path of the listed directory. */
-  path: string
-  /** The host account's home directory (breadcrumb "Home" rooting). */
-  home: string
   /**
-   * Ancestor chain from the filesystem root to the listed directory
-   * inclusive; every crumb is a jump target (crumb `hidden` is always false).
+   * List one directory level through the seam's shared listing engine — the
+   * same bounded, hidden-flagging, symlink-probing contract the browse
+   * backend serves, so a Files-tree consumer works in every web composition
+   * regardless of which picker interaction the host resolved.
+   * @param path - absolute directory to list; absent lists the home directory.
+   * @param signal - caller lifetime; abort stops the scan.
+   * @returns the level's listing with ancestry.
+   * @throws {DirectoryPickerError} `directory-unreadable` when the target is not fully
+   * qualified or cannot be listed.
    */
-  crumbs: DirectoryEntry[]
-  /** Direct child directories, name-sorted; symlinks to directories included. */
-  entries: DirectoryEntry[]
-  /**
-   * True when the backend cut `entries` at its complete-result bound: the
-   * level has more child directories than reported, and the missing rows are
-   * the name-sorted tail (hidden rows count toward the bound).
-   */
-  truncated: boolean
+  list(path?: string, signal?: AbortSignal): Promise<DirectoryListing>
 }
 
 /**
@@ -98,22 +83,6 @@ export interface DirectoryPickerCapabilities {
 
 /** Union of interaction shapes a backend can provide, derived from the merge-extensible {@link DirectoryPickerCapabilities} map. */
 export type DirectoryPickerCapability = DirectoryPickerCapabilities[keyof DirectoryPickerCapabilities]
-
-/** Closed failure vocabulary of the browse primitives (mirrored onto the wire by consumers). */
-export type DirectoryPickerErrorCode = 'directory-unreadable' | 'directory-exists' | 'directory-create-failed'
-
-/** Typed failure thrown by browse primitives so consumers can map business codes without string matching. */
-export class DirectoryPickerError extends Error {
-  /**
-   * @param code - closed business code of the failure.
-   * @param path - the absolute path the failure is about.
-   * @param message - operator-facing description.
-   */
-  constructor(readonly code: DirectoryPickerErrorCode, readonly path: string, message: string) {
-    super(message)
-    this.name = 'DirectoryPickerError'
-  }
-}
 
 declare module '@deepseek-ai/cordis' {
   interface Context {

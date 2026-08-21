@@ -2,7 +2,15 @@
   - img
   - text: workspace
   - img
-- button "Standard mode":
-  - img
-  - text: Standard mode
-  - img
+- group "Agent preset for the session you are about to start":
+  - button "Chat":
+    - img
+    - text: Chat
+  - button "Code" [pressed]:
+    - img
+    - text: Code
+    - img
+  - button "More":
+    - img
+    - text: More
+    - img

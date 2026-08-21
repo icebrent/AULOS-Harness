@@ -1,9 +1,8 @@
-/** Register the Tool call tree, details renderer, and built-in atomic views. */
+/** Register the Tool call tree and built-in atomic views. */
 import type { ConnectionHandle } from '@deepseek-ai/dsh-client-connection/client'
 import type { ClientContext } from '@deepseek-ai/dsh-client-runtime/client'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { ToolCallTree } from './tool/ToolCallTree.tsx'
-import { ToolDetails } from './tool/ToolDetails.tsx'
 import { CONVERSATION_NS as NS } from './locale.ts'
 import { askQuestionToolview } from './tool/toolviews/ask-question-row.tsx'
 import { bashToolviewSample } from './tool/toolviews/bash-sample.tsx'
@@ -17,7 +16,7 @@ import { webToolview } from './tool/toolviews/web-row.tsx'
 export const inject = ['slots', 'connection']
 
 /**
- * Mount the whole-Tool renderers and built-in atomic Tool registrations.
+ * Mount the whole-Tool renderer and built-in atomic Tool registrations.
  * @param ctx - Client root context.
  */
 export function apply(ctx: ClientContext): void {
@@ -32,12 +31,6 @@ export function apply(ctx: ClientContext): void {
     },
     inject: toolInject,
   }, ToolCallTree))
-
-  ctx.slots.inject('conversation.details.tool', () => ctx.slots.register({
-    name: 'conversation.details.tool',
-    locale: NS,
-    inject: toolInject,
-  }, ToolDetails))
 
   ctx.plugin(bashToolviewSample)
   ctx.plugin(readToolview)

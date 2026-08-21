@@ -33,6 +33,12 @@
       "path": "../ui-conversation"
     },
     {
+      "path": "../../session/session-projection"
+    },
+    {
+      "path": "../../llm/token-meter"
+    },
+    {
       "path": "../../runtime-diagnostics/invariants"
     }
   ]

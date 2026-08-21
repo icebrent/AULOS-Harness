@@ -14,15 +14,126 @@
 // lifecycle updates replace only their own row without remounting it.
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { ConversationTimelineSnapshot } from '@deepseek-ai/dsh-client-runtime/client'
+import type {
+  ChatConversationViewNode, ConversationTimelineSnapshot,
+} from '@deepseek-ai/dsh-client-runtime/client'
 import { Button, IconChevronDownOutline14, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ChatViewSlotProps, RenderMessageImages } from '../contract/slots.ts'
+import type { ToolChatData } from '../contract/chat-nodes.ts'
 import { PendingSteeringBubble } from './MessageItem.tsx'
 import { ChatNodeSeat } from './ChatNodeSeat.tsx'
+import { TurnActivityFold, type ActivityNode } from './TurnActivityFold.tsx'
 import { formatRunDuration } from './message-chrome.ts'
 import css from './ChatView.module.css'
 
 const FOLLOW_THRESHOLD = 24
+
+/** One foldable activity run inside a turn (tools + intermediate assistants). */
+interface ActivityGroup {
+  /** Engine turn number the run belongs to. */
+  turn: number
+  /** Whether the turn is still open. */
+  running: boolean
+  /** Nodes in flow order. */
+  nodes: ActivityNode[]
+}
+
+/** Render plan: plain rows plus activity folds, in flow order. */
+type PlanItem = { type: 'row'; key: string } | { type: 'fold'; group: ActivityGroup }
+
+/** The engine turn number of a chat node, when it lives inside a turn. */
+function turnNumberOf(node: ChatConversationViewNode): number | undefined {
+  const location = node.location
+  return location.kind === 'turn' || location.kind === 'step' ? location.turn.turn : undefined
+}
+
+/** Whether a chat node's owning turn is still open. */
+function turnRunning(node: ChatConversationViewNode): boolean {
+  const location = node.location
+  return (location.kind === 'turn' || location.kind === 'step') && location.turn.status === 'open'
+}
+
+/** Tool facts for a tool node: display name, running state, and settled failure. */
+function toolFacts(node: ChatConversationViewNode): { name: string; running: boolean; isError: boolean } | null {
+  if (node.kind !== 'tool-call') return null
+  const root = (node.data as ToolChatData).root
+  if ('kind' in root) {
+    return { name: root.call?.name ?? root.callId, running: false, isError: root.isError }
+  }
+  return { name: root.name, running: true, isError: false }
+}
+
+/** The assistant keys that close their turn (the final report stays visible). */
+function closingAssistantKeys(
+  order: readonly string[],
+  nodeStore: ChatNodeLookup,
+): Set<string> {
+  const lastByTurn = new Map<number, string>()
+  for (const key of order) {
+    const node = nodeStore.get(key)
+    if (node?.kind !== 'assistant-step') continue
+    const turn = turnNumberOf(node)
+    if (turn !== undefined) lastByTurn.set(turn, key)
+  }
+  return new Set(lastByTurn.values())
+}
+
+/** The chat node map's read face (a runtime store, not a plain Map). */
+type ChatNodeLookup = { get(key: string): ChatConversationViewNode | undefined }
+
+/**
+ * Partition the flow order into plain rows and activity folds. A fold merges
+ * consecutive tool and intermediate-assistant nodes of one turn; everything
+ * else — user messages, the closing assistant report, commands, errors,
+ * approvals, the turn tail — stays a plain row.
+ */
+function buildPlan(order: readonly string[], nodeStore: ChatNodeLookup): PlanItem[] {
+  const closing = closingAssistantKeys(order, nodeStore)
+  const plan: PlanItem[] = []
+  let current: ActivityGroup | null = null
+  const flush = (): void => {
+    if (current === null) return
+    plan.push({ type: 'fold', group: current })
+    current = null
+  }
+  for (const key of order) {
+    const node = nodeStore.get(key)
+    if (node === undefined) {
+      flush()
+      plan.push({ type: 'row', key })
+      continue
+    }
+    const turn = turnNumberOf(node)
+    const foldable = node.kind === 'tool-call'
+      || (node.kind === 'assistant-step' && !closing.has(key))
+    if (!foldable || turn === undefined) {
+      flush()
+      plan.push({ type: 'row', key })
+      continue
+    }
+    // The fold's own vocabulary: tool rows count toward the tool figure and
+    // everything else in the run is an intermediate assistant step.
+    const foldKind = node.kind === 'tool-call' ? 'tool' : 'assistant'
+    if (current !== null && current.turn === turn) {
+      const facts = toolFacts(node)
+      current.nodes.push({
+        key,
+        kind: foldKind,
+        isError: facts?.isError === true,
+      })
+      continue
+    }
+    flush()
+    const facts = toolFacts(node)
+    current = {
+      turn,
+      running: turnRunning(node),
+      nodes: [{ key, kind: foldKind, isError: facts?.isError === true }],
+    }
+  }
+  flush()
+  return plan
+}
 
 /** Active column host when present; otherwise the view-local scroller. */
 function scrollerOf(from: HTMLElement): HTMLElement {
@@ -54,7 +165,13 @@ function flowTop(row: HTMLElement, scrollport: HTMLElement): number {
 function pagingAnchor(list: HTMLElement, scrollport: HTMLElement): HTMLElement | null {
   const viewport = scrollport.getBoundingClientRect()
   const composer = scrollport.querySelector<HTMLElement>('[data-composer-seat]')
-  const visibleBottom = composer?.getBoundingClientRect().top ?? viewport.bottom
+  // The bottom trajectory panel, when mounted, sits between the transcript
+  // and the composer: rows behind it are not readable, so it shortens the
+  // visible band exactly like the composer seat does.
+  const panel = scrollport.querySelector<HTMLElement>('[data-trajectory-panel]')
+  const visibleBottom = panel?.getBoundingClientRect().top
+    ?? composer?.getBoundingClientRect().top
+    ?? viewport.bottom
   // Scroll events are hot: hit-test a few points through the stretched flow
   // rows before considering the full mounted set. The fallback keeps jsdom
   // and pre-layout states deterministic; a virtualizer naturally bounds it.
@@ -215,6 +332,26 @@ export function ChatView({
     [loadImage, renderSlot],
   )
   const runningTurnStart = useMemo(() => runningTurnStartTime(timeline), [timeline])
+
+  // Activity folding: partition the flow into plain rows and per-turn folds.
+  const plan = useMemo(() => buildPlan(order, nodeStore), [order, nodeStore])
+  const hasActivity = useMemo(() => plan.some(item => item.type === 'fold'), [plan])
+  const rowRender = useCallback((key: string) => (
+    <ChatNodeSeat
+      key={key}
+      nodeKey={key}
+      useSession={useSession}
+      selectedCallId={selectedCallId}
+      cwd={cwd}
+      openFile={requestOpenFile}
+      inspectCall={inspectCall}
+      forkAt={forkAt}
+      renderMessageImages={renderMessageImages}
+      fileMentions={fileMentions}
+      renderSlot={renderSlot}
+      t={t}
+    />
+  ), [useSession, selectedCallId, cwd, requestOpenFile, inspectCall, forkAt, renderMessageImages, fileMentions, renderSlot, t])
 
   const listRef = useRef<HTMLDivElement | null>(null)
   const columnRef = useRef<HTMLDivElement | null>(null)
@@ -429,28 +566,31 @@ export function ChatView({
               </button>
             </div>
           )}
-          {order.map(nodeKey => (
-            <ChatNodeSeat
-              key={nodeKey}
-              nodeKey={nodeKey}
-              useSession={useSession}
-              selectedCallId={selectedCallId}
-              cwd={cwd}
-              openFile={requestOpenFile}
-              inspectCall={inspectCall}
-              forkAt={forkAt}
-              renderMessageImages={renderMessageImages}
-              fileMentions={fileMentions}
-              renderSlot={renderSlot}
-              t={t}
-            />
-          ))}
+          {plan.map(item => item.type === 'row'
+            ? rowRender(item.key)
+            : (
+              <TurnActivityFold
+                key={`fold-${item.group.nodes[0]?.key ?? item.group.turn}`}
+                nodes={item.group.nodes}
+                running={item.group.running}
+                runningNames={item.group.nodes
+                  .map(node => node.key)
+                  .map(key => nodeStore.get(key))
+                  .map(node => (node === undefined ? null : toolFacts(node)))
+                  .filter((facts): facts is { name: string; running: boolean; isError: boolean } =>
+                    facts !== null && facts.running)
+                  .map(facts => facts.name)}
+                renderRow={rowRender}
+                t={t}
+              />
+            ))}
           {/* No pending placeholders: questions (ui-user-questions) and approvals
               (ApprovalPanel) both take over the composer, so a flow card would
               double-render the same wait. */}
           {/* Turn-level loading signal: rides the whole running turn (first-token
-              wait, tool execution, streaming) so it never flickers per step. */}
-          {running && <TurnStatus startTime={runningTurnStart} t={t} />}
+              wait, tool execution, streaming) so it never flickers per step.
+              Once a fold exists, its live block is the running indicator. */}
+          {running && !hasActivity && <TurnStatus startTime={runningTurnStart} t={t} />}
           {pendingSteering.map(item => (
             <PendingSteeringBubble
               key={item.id}

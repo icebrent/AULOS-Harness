@@ -50,6 +50,15 @@ describe('assembled search card', () => {
 
     const tree = await screen.findByRole('tree', { name: 'Sessions' }, { timeout: 10_000 })
     fireEvent.click(await within(tree).findByText('Fixture 历史会话'))
+    // The settled turns fold their tool activity; expand every fold so the
+    // keyed rows mount (the bash sample is turn 66, the grep card turn 67).
+    await waitFor(() => {
+      const folds = [...document.querySelectorAll<HTMLElement>('button')]
+        .filter(el => el.getAttribute('aria-expanded') === 'false'
+          && /(?:Completed|已完成) · \d+ (?:tools|个工具)/.test(el.textContent ?? ''))
+      if (folds.length === 0) throw new Error('no settled activity folds mounted yet')
+      for (const fold of folds) fireEvent.click(fold)
+    }, { timeout: 10_000 })
     // Wait for chat content to reach the fixture's later turns (the bash sample
     // is turn 66, the grep card turn 67).
     await waitFor(() => {

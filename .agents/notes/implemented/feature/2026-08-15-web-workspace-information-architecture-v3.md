@@ -1,0 +1,33 @@
+# Agent Note: Web Workspace information architecture (v3)
+
+Status: implemented
+
+English | [中文](2026-08-15-web-workspace-information-architecture-v3.zh.md)
+
+Partially supersedes the [v2 presentation layer](2026-08-14-ai-workspace-presentation-layer-v2.md): the three-column layout, the light visual system, tool activity folding, and the quiet session header survive unchanged; the right inspector and the Activity-driven trajectory entry are replaced by the decisions below.
+
+## Problem
+
+The v2 right inspector bundled three unrelated jobs — live context figures, an activity feed, and the selected tool call's details — while the Context data it carried was useful exactly where the user reads the conversation, not in a side column. Trajectory sat one click behind the Activity panel, so watching the agent while chatting required leaving the conversation. The sidebar Session rows carried no resource signal, and no surface anywhere browsed the workspace files the agent was mutating. The product target is one calm workspace surface: context beside the transcript, files in the right column, and trajectory visible under the chat.
+
+## Decision
+
+- **Compact Context Card above the transcript.** `ContextCard` renders between the session header and the scrollport, left-aligned (fit-content, never full-width) and hidden while no projection value exists. Its four groups — occupancy ring/percent, billed input / output tokens, cache hit with read/write, TTFT average with decode throughput — reuse the exact display folds of the stats strip (`contextOccupancy`, `billedInputTokens`, `cacheHitPercent`, `formatDuration`) over `contextPressure` / `tokenUsage` / `sessionStats`; nothing is recomputed from session events. The ambient stats strip under the composer is restored for turn/step counts and wall times, so the two surfaces split the figures the inspector used to own.
+- **Right column is the Files tree.** A new `client/ui-files` plugin registers `FilesPanel` into the frame's `details` slot (ui-conversation's InspectorPanel, DetailsPanel, and the `conversation.details.tool` seat are deleted; ui-tool's `ToolDetails` goes with them). The tree roots at the current session's cwd, reloads on workspace switch (aborting in-flight levels), lists lazily on first expand, and offers loading/empty/error states, retry, and truncation markers; files select on click and open through `workspaces.openPath` on double click. Listing rides the existing host seam: `host.listDirectory`'s `DirectoryListing` gains `files`/`filesTruncated` beside the directory head (same bounded name-sorted window, symlink-to-file rows probed and merged), so the picker keeps its historical shape and the tree adds no shell or recursive scan. Git modification status is deferred — the seam reports no VCS state.
+- **Session rows carry projection metadata.** The sidebar's second line folds billed tokens, cache-hit percent, and context occupancy (thin progress bar) from the list-published `projectionValues` (`sessionRowMetrics`), the same projections the conversation surfaces read — the sidebar never parses session logs. Rows without values keep the historical single-line height.
+- **Bottom Trajectory panel.** `TrajectoryBody` is extracted from the view tab and shared verbatim by both surfaces (one inject face: paging, actual-duration preference, all renderer state). The full tab (`conversation.view`, id `trajectory`) survives as the detailed debug/audit surface, opened from a header utility and returned via the existing back bar. The bottom panel registers into the session body's `'conversation.session.bottom'` single seat: a collapsed bar by default, expanding to a 160–560px panel whose top handle drags the height; it is sticky just above the composer seat (riding `--dsh-composer-height`), so chat and the ledger stay visible together and the composer keeps its bottom edge. A chat tool-row inspect expands the panel and hands the addressed call through the shared owner share; the session body unmounts the panel while the full tab is active so the ledger never renders twice.
+- **Inspector removal.** The Activity tab's steps/turns/LLM/tool figures overlap the restored stats strip and the trajectory surfaces, so the tab is removed; the Context tab's figures moved to the Context Card; the tool details view is gone — chat row selection highlights only, and full args/result inspection lives in trajectory.
+
+## Alternatives considered
+
+**Render the bottom region from the conversation shell, below the composer (the literal target sketch).** Rejected: the shell entry is `session-maybe` scope while the active-view and inspect state live in the session-scoped chat store, and the slot core rejects one store handle mounted under two scopes (`one handle, one scope`). No framework path exposes a session's store instance to a `session-maybe` entry, so the region would need a mirrored state source or a new framework extension. The session body — which already shares the handle with the view ring — renders and gates the region instead, sticky above the composer.
+
+**CSS `:has` gating from the shell.** Rejected: it would hide the panel without unmounting it, keeping a second trajectory body mounted beside the full tab.
+
+**List workspace files through `ctx.fs.listDir` directly.** Rejected: the filesystem service is agent-plane (behind presets), not reachable from the host RPC boundary; extending the existing browse listing keeps one seam, one bound, and one policy surface.
+
+**Keep the inspector and add Files as a second tab.** Rejected: the product target bans a dual-occupancy sidebar; context belongs beside the transcript and activity folds into trajectory.
+
+## Consequences
+
+The right column no longer answers "what is the context doing" — the Context Card and stats strip do, beside the conversation; the column answers "what files does the workspace have". Tool-call args/result inspection lost its dedicated panel and lives in the trajectory surfaces; a future preview/editor surface would be a new seam. The bottom panel's expand/height state is component-local and resets on session switches. The narrow-viewport trajectory gap v2 recorded is closed: the header utility opens the full tab at any width. `formatCompactTokens` and `IconFileOutline16` joined ui-primitives as shared atoms (three consumers). The client suites cover every surface — ContextCard, FilesPanel (lazy/error/refresh/switch), the session metadata fold and rows, the panel chrome (expand/collapse/drag clamp/inspect auto-expand), and the shared-body registration — and the assembled Web snapshot pins the new layout through the real client composition.

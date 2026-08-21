@@ -104,6 +104,11 @@ describe('web e2e: message IconActions and clocks on settled history', () => {
     const sessionRow = page.locator('[role="treeitem"]').nth(1)
     await sessionRow.waitFor({ timeout: 10_000 })
     await sessionRow.click()
+    // The settled turn folds its mid-turn narration; expand the fold so the
+    // narration and the closing tail both participate.
+    const fold = page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false }).first()
+    await fold.waitFor({ timeout: 10_000 })
+    await fold.click()
     await expect.poll(() => page.getByText(MID_TURN_TEXT, { exact: true }).count(), { timeout: 15_000 }).toBe(1)
     await expect.poll(() => page.getByText('DONE', { exact: true }).count(), { timeout: 15_000 }).toBe(1)
 
@@ -129,7 +134,8 @@ describe('web e2e: message IconActions and clocks on settled history', () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-message-actions-aria'))
     await page.getByRole('button', { name: /^Select model, current/ })
       .waitFor({ timeout: 10_000 })
-    await page.getByText(/Cache hit \d+%/u).first().waitFor({ timeout: 10_000 })
+    // The compact Context Card owns the cache figure beside the transcript.
+    await page.getByText('Cache', { exact: true }).first().waitFor({ timeout: 10_000 })
     // Keep a footer focused so opacity-hidden actions stay in the a11y tree
     // as an active/focused control during the capture.
     await page.getByRole('button', { name: 'Copy' }).first().focus()

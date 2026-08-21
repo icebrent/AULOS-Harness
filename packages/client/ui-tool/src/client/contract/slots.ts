@@ -59,8 +59,3 @@ export type ToolTreeProps = PropsRuntime<'conversation.chat.node', 'tool-call'>
   & PropsRenderSlots<'tool.call.toolview'>
   & PropsLocale<'conversation'>
   & InjectFace<ToolHostDescriptionInjected>
-
-/** Full props of the selected Tool output renderer in the details panel. */
-export type ToolDetailsProps = PropsRuntime<'conversation.details.tool'>
-  & PropsLocale<'conversation'>
-  & InjectFace<ToolHostDescriptionInjected>

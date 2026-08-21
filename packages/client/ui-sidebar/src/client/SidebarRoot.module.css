@@ -93,9 +93,9 @@
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
-  height: 60px;
+  height: 52px;
   padding: 8px 0 8px 4px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   box-sizing: border-box;
   overflow: hidden;
 }

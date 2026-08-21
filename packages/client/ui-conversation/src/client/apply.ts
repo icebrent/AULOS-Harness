@@ -14,7 +14,6 @@ import type { ViewTab } from './contract/views.ts'
 import type {
   ApprovalWait, ChatNodeTurnDataInjected, ChatScrollPosition, ChatViewInjected, ComposerBarInjected,
   ComposerChainProps, ConversationInjected, ConversationSessionHeaderInjected, ConversationSessionInjected,
-  DetailsInjected,
 } from './contract/slots.ts'
 import type { InputNotice } from './input/contract.ts'
 import { createChatStore } from './stores.ts'
@@ -34,7 +33,7 @@ import { todoDockEntry } from './skeleton/TodoPanel.tsx'
 import { queueDockEntry } from './queue/QueueDock.tsx'
 import { ConversationRoot } from './skeleton/ConversationRoot.tsx'
 import { ConversationSession, ConversationSessionHeader } from './skeleton/ConversationSession.tsx'
-import { DetailsPanel } from './skeleton/DetailsPanel.tsx'
+import { FullTrajectoryButton } from './skeleton/FullTrajectoryButton.tsx'
 import { en, NS, zh, type ConversationKey } from './locales.ts'
 import { registerConversationNodes } from './conversation-nodes/register.ts'
 import { registerChatNodeRenderers } from './chat/register-node-renderers.ts'
@@ -236,11 +235,16 @@ export function apply(ctx: Context): void {
 
   // The strict session body fills the resident scrollport without owning it;
   // the Hero/composer path therefore stays fixed while the first blank
-  // session appears after a Workspace pick.
+  // session appears after a Workspace pick. The bottom trajectory region is
+  // a child of THIS entry: it shares the chat store (active view gating and
+  // the inspect handoff), and the same session-scope handle is what the
+  // header and the view entries already share.
   slots.register({
     name: 'conversation.session',
+    locale: NS,
     children: {
       'conversation.view': { kind: 'list', scope: 'session' },
+      'conversation.session.bottom': { kind: 'single', scope: 'session' },
     },
     store: chatStore,
     inject: (sessionId: SessionId, _actions: BoundActions<typeof chatStore>): ConversationSessionInjected => {
@@ -267,8 +271,22 @@ export function apply(ctx: Context): void {
     inject: (): ConversationSessionHeaderInjected => ({
       views,
       open: (id) => { sessions.open(id) },
+      toggleFiles: () => { layout.toggleDetails() },
     }),
   }, ConversationSessionHeader)
+
+  // The Full Trajectory entry point: a quiet header utility beside the Files
+  // toggle. The bottom panel serves quick observation; this button opens the
+  // detailed view tab. Negative order keeps it left of the session-log
+  // download and jobs utilities, so the rightmost header control stays where
+  // the export geometry contract pins it.
+  slots.register({
+    name: 'conversation.session.header.utilities',
+    id: 'trajectory',
+    order: -10,
+    locale: NS,
+    store: chatStore,
+  }, FullTrajectoryButton)
 
   // The default composer body: its own single slot inside the composer
   // chain's fallback. Public machine surface arrives via the
@@ -392,10 +410,7 @@ export function apply(ctx: Context): void {
       const conversation = concreteConversation(ctx)
       const scoped = scopedConversation(sessions, sessionId)
       return {
-        openDetails: (target) => {
-          actions.select(target)
-          layout.openDetails()
-        },
+        selectCall: (target) => { actions.select(target) },
         fileMentions: owner => ctx.get('chatFileMentions')?.forClosing(owner),
         openFile: (path) => {
           const cwd = sessions.list.getSnapshot().byId[sessionId]?.cwd
@@ -405,9 +420,11 @@ export function apply(ctx: Context): void {
         loadImage: attachment => conversation.resolveImage(sessionId, attachment),
         // Unregistered 'trajectory' id is safe: the tab ring falls back to
         // the first view, and the untouched inspect target stays inert.
+        // The inspect target feeds the bottom trajectory panel (which
+        // expands and applies it) and, when the full tab is active, the
+        // view slot's own inspect handoff.
         inspectCall: (callId) => {
           actions.setInspect({ callId })
-          actions.setView('trajectory')
         },
         chatScroll: {
           save: (position) => {
@@ -427,8 +444,9 @@ export function apply(ctx: Context): void {
     },
   }, ChatView)
 
-  // Session stats stick with the composer (composer.dock = stats-line family).
-  slots.register({ name: 'conversation.composer.dock', id: 'stats', order: 0, locale: NS }, StatsLine)
+  // Session stats moved into the compact context card above the transcript;
+  // the composer dock keeps only the queue/todo strips, and the right column
+  // belongs to the Files tree (ui-files registers into the 'details' slot).
 
   // Class-plugin mount (packages/AGENTS.md service form): the service
   // registers itself as `conversation` and lives on its own child fiber.
@@ -443,16 +461,15 @@ export function apply(ctx: Context): void {
   // registration path into the input dock declared above.
   ctx.plugin(queueDockEntry)
 
+  // The ambient stats strip under the composer card: turn/step counts,
+  // LLM/tool wall times, latency/throughput, cache, and token groups over
+  // the durable projections (the compact context card above the transcript
+  // carries occupancy plus the same token/cache figures).
   slots.register({
-    name: 'details',
+    name: 'conversation.composer.dock',
+    id: 'stats',
+    order: 10,
     locale: NS,
-    children: {
-      'conversation.details.tool': { kind: 'single', scope: 'session' },
-    },
-    store: chatStore,
-    inject: (): DetailsInjected => ({
-      closeDetails: () => { layout.closeDetails() },
-    }),
-  }, DetailsPanel)
+  }, StatsLine)
 
 }

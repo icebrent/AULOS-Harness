@@ -6,6 +6,10 @@ export const NS = 'trajectory'
 /** The trajectory dictionary key set (the source of truth for both locales). */
 export type TrajectoryKey =
   | 'view.trajectory'
+  | 'panel.expand'
+  | 'panel.collapse'
+  | 'panel.resize'
+  | 'panel.region'
   | 'toolbar.aria'
   | 'toolbar.duration'
   | 'toolbar.useActualDuration'
@@ -30,6 +34,10 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 /** Simplified Chinese dictionary (the key-set source of truth). */
 export const zh: Record<TrajectoryKey, string> = {
   'view.trajectory': '轨迹',
+  'panel.expand': '展开轨迹面板',
+  'panel.collapse': '收起轨迹面板',
+  'panel.resize': '调整轨迹面板高度',
+  'panel.region': '底部轨迹面板',
   'toolbar.aria': '轨迹工具栏',
   'toolbar.duration': 'Duration',
   'toolbar.useActualDuration': 'Use actual duration',
@@ -48,6 +56,10 @@ export const zh: Record<TrajectoryKey, string> = {
 /** English dictionary. */
 export const en: Record<TrajectoryKey, string> = {
   'view.trajectory': 'Trajectory',
+  'panel.expand': 'Expand trajectory panel',
+  'panel.collapse': 'Collapse trajectory panel',
+  'panel.resize': 'Resize trajectory panel',
+  'panel.region': 'Bottom trajectory panel',
   'toolbar.aria': 'Trajectory toolbar',
   'toolbar.duration': 'Duration',
   'toolbar.useActualDuration': 'Use actual duration',

@@ -118,8 +118,9 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
     // so the first step's message and tool result are already durable.
     await expect.poll(() => existsSync(marker), { timeout: 20_000 }).toBe(true)
     await expect.poll(() => page.getByText(NARRATION, { exact: true }).count(), { timeout: 10_000 }).toBe(1)
+    // The running turn's activity fold owns live status whenever it exists.
     await expect.poll(
-      () => page.getByRole('status').filter({ hasText: 'Deep diving...' }).isVisible(),
+      () => page.getByRole('status').filter({ hasText: 'Working…' }).isVisible(),
       { timeout: 10_000 },
     ).toBe(true)
     // Only the user bubble owns a footer (clock + copy; user bubbles carry no

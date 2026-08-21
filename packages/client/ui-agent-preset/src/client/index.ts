@@ -97,8 +97,9 @@ export function apply(ctx: ClientContext): void {
   // render and simply hides the button while no flow exists.
   let creatorDraft: (() => void) | undefined
 
-  // The new-session chip and the header label: one controller, because the
-  // staged choice belongs to the flow rather than to any one session.
+  // The new-session mode selector and the header label: one controller,
+  // because the staged choice belongs to the flow rather than to any one
+  // session.
   ctx.inject(['slots', 'conversation', 'sessions', 'workspaces'], (scope: ClientContext) => {
     const api = (scope.get('connection') as ConnectionHandle).api
     const seat = new AgentPresetSeatController(api, (): SeatSessionSummary | undefined => {
@@ -129,14 +130,14 @@ export function apply(ctx: ClientContext): void {
 
     scope.effect(() => {
       // Connecting a workspace either creates a blank session or reuses one,
-      // and either way the chip's pick predates it — so the stage is applied
-      // when the session arrives, not when it was made.
+      // and either way the selector's pick predates it — so the stage is
+      // applied when the session arrives, not when it was made.
       const stop = scope.sessions.list.subscribe(() => { void seat.apply() })
-      // The chip opens on the deployment default, so a default changed from
-      // the settings surface moves it too — otherwise the screen that starts
-      // the next session keeps offering the previous default until a reload,
-      // which is exactly the session the setting claims to govern. A staged
-      // pick survives: `load()` prefers it over the refreshed fallback.
+      // The selector opens on the deployment default, so a default changed
+      // from the settings surface moves it too — otherwise the screen that
+      // starts the next session keeps offering the previous default until a
+      // reload, which is exactly the session the setting claims to govern. A
+      // staged pick survives: `load()` prefers it over the refreshed fallback.
       const settingsMoved = scope.remote.$on('settings/document-updated', (ns) => {
         if (ns !== AGENT_PRESET_SETTINGS_NS) return
         void seat.load()
@@ -148,21 +149,22 @@ export function apply(ctx: ClientContext): void {
       })
       // Authoring writes a FILE, not a setting, so nothing on the wire
       // announces it — without this the screen that starts the next session
-      // keeps offering the roster as it stood when the chip first loaded, and
-      // a preset authored to be used is missing from the one place it is used.
+      // keeps offering the roster as it stood when the selector first loaded,
+      // and a preset authored to be used is missing from the one place it is
+      // used.
       const readRoster = (): void => { void seat.load() }
       rosterReaders.add(readRoster)
       // Stage WITHOUT applying — the still-current running session would
       // refuse the swap and drop the stage — then start the session it lands
-      // on: the chip's list-change applier composes the blank session the
+      // on: the selector's list-change applier composes the blank session the
       // workspace connect produces or reuses.
       creatorDraft = () => {
-        // The introduce cue makes the chip announce the pick the user never
-        // made on this screen — the stage happened back in settings.
+        // The introduce cue makes the selector announce the pick the user
+        // never made on this screen — the stage happened back in settings.
         seat.stage('cordis', true)
         scope.workspaces.startSession()
       }
-      const chip = scope.slots.register({
+      const seatRegistration = scope.slots.register({
         name: 'conversation.hero.agentPreset',
         locale: 'settings.agentPreset',
         inject: seatInjected,
@@ -181,10 +183,10 @@ export function apply(ctx: ClientContext): void {
         presetSelected()
         rosterReaders.delete(readRoster)
         creatorDraft = undefined
-        chip()
+        seatRegistration()
         label()
       }
-    }, 'ui-agent-preset: new-session chip and header label')
+    }, 'ui-agent-preset: new-session mode selector and header label')
   })
 
   const sectionInjected = (): AgentPresetSectionInjected => ({

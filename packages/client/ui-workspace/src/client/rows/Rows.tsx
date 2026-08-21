@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import clsx from 'clsx'
 import {
+  formatCompactTokens,
   HoverCard, IconArchiveOutline20, IconBranchOutline16, IconEditOutline16,
   IconEllipsisOutline16, IconFolderClose16, IconFolderOpen16, IconPlusOutline16,
   IconTrashOutline16, IconTriangleRightFill14, Menu, StateDot,
@@ -15,8 +16,7 @@ import {
 import type { StateDotState } from '@deepseek-ai/dsh-client-ui-primitives'
 import { abbreviateHomePath } from '@deepseek-ai/dsh-client-runtime/client'
 import type { WorkspaceBrowserProps } from '../contract/slots.ts'
-import type { GroupNode, SearchResultNode, SessionNode } from '../tree.ts'
-import { relativeTime } from '../tree.ts'
+import { relativeTime, sessionRowMetrics, type GroupNode, type SearchResultNode, type SessionNode } from '../tree.ts'
 import css from './Rows.module.css'
 
 /** The standard locale seat, prop-passed from the browser root. */
@@ -300,6 +300,39 @@ function SessionHoverContent({ node, now, t }: { node: SessionNode; now: number;
 }
 
 /**
+ * The session row's second line: billed tokens, cache hit, and context
+ * occupancy with a thin progress bar — display folds over the list-published
+ * projection values, rendered only while at least one figure exists.
+ */
+function SessionMetaLine({ node, t }: { node: SessionNode; t: RowTranslate }) {
+  const metrics = sessionRowMetrics(node.projectionValues)
+  if (metrics === null) return null
+  if (metrics.billedTokens === 0 && metrics.cachePercent === null && metrics.contextPercent === null) return null
+  return (
+    <span className={css.meta}>
+      {metrics.billedTokens > 0 && (
+        <span className={css.metaItem}>
+          <span className={css.metaValue}>{formatCompactTokens(metrics.billedTokens)}</span>
+        </span>
+      )}
+      {metrics.cachePercent !== null && (
+        <span className={css.metaItem}>
+          <span>{t('meta.cacheLabel')}</span>{' '}<span className={css.metaValue}>{metrics.cachePercent}%</span>
+        </span>
+      )}
+      {metrics.contextPercent !== null && (
+        <span className={css.metaItem}>
+          <span>{t('meta.contextLabel')}</span>{' '}<span className={css.metaValue}>{metrics.contextPercent}%</span>
+          <span className={css.contextBar} aria-hidden>
+            <span className={css.contextBarFill} style={{ width: `${metrics.contextPercent}%` }} />
+          </span>
+        </span>
+      )}
+    </span>
+  )
+}
+
+/**
  * One flat search result: title, Workspace context, and optional content
  * excerpt. Search navigation opens the session only; it does not address an
  * event inside the conversation.
@@ -436,7 +469,10 @@ export function SessionNodeItem({ node, currentId, now, onOpen, onRename, onFork
           {showStatus && <SessionStatusDots statuses={statuses} />}
         </span>
       )}
-      <span className={css.title}>{title}</span>
+      <div className={css.sessionMain}>
+        <span className={css.title}>{title}</span>
+        <SessionMetaLine node={node} t={t} />
+      </div>
       {/* A blank New Session row is a provisional placeholder: nothing has
           happened in it yet, so a "now" timestamp and the row verbs
           (rename/fork/archive) would all act on content that does not

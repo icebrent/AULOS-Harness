@@ -139,6 +139,13 @@ describe('web e2e: Cordis tools use their owned cards', () => {
     await expect.poll(() => page.getByText('CORDIS_UI_DONE', { exact: true }).count(), { timeout: 15_000 })
       .toBeGreaterThanOrEqual(1)
 
+    // The settled turn folds its tool activity; expand every fold (the
+    // lifecycle may span more than one turn) to reach the cards.
+    const folds = page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false })
+    while (await folds.count() > 0) {
+      await folds.first().click()
+    }
+
     const inspectRow = page.locator('[data-tool="cordis_inspect_self"]').filter({ hasText: 'Inspect' }).first()
     await inspectRow.waitFor({ timeout: 10_000 })
 

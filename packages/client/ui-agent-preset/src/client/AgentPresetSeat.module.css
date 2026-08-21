@@ -1,19 +1,83 @@
-/* Agent-preset chip on the new-session screen, beside the workspace picker.
-   Geometry mirrors HeroShell's .workspace so the two read as one row. */
+/* New-session mode selector: a macOS-style segmented control (Chat | Code |
+   More) under the workspace picker. The More trigger lives inside the same
+   segment group; the description of each mode rides its tooltip. */
 
-.seat {
+.modes {
+  display: inline-flex;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 3px;
+  border: 1px solid var(--dsw-alias-border-soft);
+  border-radius: 11px;
+  background: var(--dsw-alias-bg-base);
+}
+
+/* One segment: icon + mode name; the selected segment lifts to a white pill. */
+.card {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 180px;
+  min-height: 26px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 26px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.card:not(:disabled):hover {
+  color: var(--dsw-alias-label-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+.card[aria-pressed='true'] {
+  background: var(--dsw-alias-surface);
+  color: var(--dsw-alias-label-primary);
+  box-shadow: var(--dsw-alias-shadow-soft);
+}
+
+.card:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.cardIcon {
+  flex: none;
+  color: inherit;
+}
+
+.cardName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardCheck {
+  flex: none;
+  color: var(--dsw-alias-state-business-primary);
+}
+
+/* The More trigger: same posture as a segment, with a menu chevron. */
+.more {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  max-width: min(100%, 240px);
-  min-height: 28px;
-  padding: 0 8px;
+  max-width: min(100%, 200px);
+  min-height: 26px;
+  padding: 0 10px;
   border: none;
-  border-radius: 16px;
+  border-radius: 8px;
   background: transparent;
-  color: var(--dsw-alias-label-primary);
-  font-size: 13px;
-  line-height: 20px;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  line-height: 26px;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -21,19 +85,27 @@
   cursor: pointer;
 }
 
-.seat:not(:disabled):hover,
-.seat[aria-expanded='true'] {
+.more:not(:disabled):hover,
+.more[aria-expanded='true'] {
+  color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-interactive-bg-hover);
 }
 
-.seat:disabled {
-  cursor: default;
-  color: var(--dsw-alias-label-quaternary);
+/* A staged advanced pick names itself on the trigger, so the choice stays
+   legible after the menu closes. */
+.moreStaged {
+  color: var(--dsw-alias-label-primary);
+  font-weight: 600;
 }
 
-.seatIcon {
+.more:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.moreIcon {
   flex: none;
-  color: var(--dsw-alias-label-primary);
+  color: inherit;
 }
 
 /* Introduce cue: the icon eases in on an overshoot-free expo curve (duration
@@ -57,7 +129,7 @@
   }
 }
 
-/* Wraps the staggered characters into one flex item, so the chip's gap
+/* Wraps the staggered characters into one flex item, so the trigger's gap
    applies around the name as a whole rather than between characters. */
 .introText {
   display: inline-block;

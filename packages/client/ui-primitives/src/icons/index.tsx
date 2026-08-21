@@ -669,6 +669,14 @@ export const IconFolderClose16 = ({ size = 16, className }: IconProps) => (
   </svg>
 )
 
+/** file_outline_16 (hand-drawn for the project Files tree: folded page outline matching the …Outline16 stroke family) */
+export const IconFileOutline16 = ({ size = 16, className }: IconProps) => (
+  <svg width={size} height={size} className={className} viewBox="0 0 16 16" fill="none">
+    <path d="M3.85 1.65h5.4l2.9 2.9v9.8H3.85V1.65Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+    <path d="M9.25 1.65v2.9h2.9" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
+  </svg>
+)
+
 /** tree_corner_8x10 (figma extract; session-tree "L" connector, stroke geometry pre-expanded) */
 export const IconTreeCorner8x10 = ({ size = 10, className }: IconProps) => (
   <svg width={(size * 8) / 10} height={size} className={className} viewBox="-0.5 0 8.5 10.5" fill="none">

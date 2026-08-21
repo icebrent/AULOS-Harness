@@ -88,7 +88,7 @@ describe.skipIf(MODE === 'record')('web e2e: details panel follows the current S
     await scaffold?.close()
   })
 
-  it('starts and reloads closed, then stays closed across Session ownership changes', async () => {
+  it('starts and reloads open, then stays open across Session ownership changes', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-details-session-lifecycle'))
     const settled = scaffold.whenTurnSettled()
     const input = page.locator('textarea').first()
@@ -97,9 +97,20 @@ describe.skipIf(MODE === 'record')('web e2e: details panel follows the current S
     await settled
     await page.getByText('LIGHTHOUSE', { exact: true }).waitFor({ timeout: 15_000 })
 
-    await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(0)
-    expect(await page.getByText('Details', { exact: true }).isVisible()).toBe(false)
+    // The Files column opens with the first active session (the layout
+    // default), at the product's default width of 360px.
+    await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(360)
+    await page.getByRole('tree', { name: 'Files' }).waitFor({ timeout: 10_000 })
     await compareOrRefreshGolden(HANDLES_EXPECTED, await handleSnapshot(page), MODE)
+
+    // The header toggle closes and reopens the column; the state then
+    // survives a reload (the Files panel persists across sessions too).
+    // The details slot stays mounted at zero width — the track is the state.
+    const toggle = page.getByRole('button', { name: 'Show or hide the Files panel' })
+    await toggle.click()
+    await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(0)
+    await toggle.click()
+    await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(360)
 
     const sidebarBefore = await sidebarTrack(page)
     const sidebarHandle = page.locator('[data-side="sidebar"]')
@@ -117,19 +128,20 @@ describe.skipIf(MODE === 'record')('web e2e: details panel follows the current S
     acknowledgeReloadConnectionLoss(tripwire, warningStart)
     await appFrame(page).waitFor({ timeout: 30_000 })
     await page.getByText('LIGHTHOUSE', { exact: true }).waitFor({ timeout: 15_000 })
-    await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(0)
-    expect(await page.getByText('Details', { exact: true }).isVisible()).toBe(false)
+    await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(360)
+    await page.getByRole('tree', { name: 'Files' }).waitFor({ timeout: 10_000 })
 
     await page.getByRole('button', { name: /^(?:New session|新.*会话)$/ }).last().click()
     await page.getByText('Into the Unknown', { exact: false }).waitFor({ timeout: 15_000 })
+    // The Files column opens for an ACTIVE session only: the blank hero
+    // closes the column again.
     await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(0)
-    expect(await page.getByText('Details', { exact: true }).isVisible()).toBe(false)
 
     const original = page.locator('[role=treeitem]').filter({ hasText: 'Reply with the single word' }).first()
     await original.click()
     await page.getByText('LIGHTHOUSE', { exact: true }).waitFor({ timeout: 15_000 })
-    await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(0)
-    expect(await page.getByText('Details', { exact: true }).isVisible()).toBe(false)
+    await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(360)
+    await page.getByRole('tree', { name: 'Files' }).waitFor({ timeout: 10_000 })
 
     const ungrouped = page.getByText('Ungrouped', { exact: true })
     const ungroupedRow = ungrouped.locator('..').locator('..')
@@ -144,7 +156,7 @@ describe.skipIf(MODE === 'record')('web e2e: details panel follows the current S
     const seeded = ungroupedSection.locator('[role="treeitem"]').nth(1)
     await seeded.click()
     await page.getByText('DONE', { exact: true }).waitFor({ timeout: 15_000 })
-    await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(0)
+    await expect.poll(() => detailsTrack(page), { timeout: 5_000 }).toBe(360)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
     await assertFixtureInventory(SNAPSHOT_DIR, ['handles.expected.md'])

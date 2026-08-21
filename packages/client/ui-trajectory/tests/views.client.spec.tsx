@@ -172,7 +172,10 @@ function standaloneProps(
 }
 
 /** Real-stack bench: root Context + real SlotRegistry ring + the plugin fiber. */
-async function bench(snapshot = historySnapshot(NODES)) {
+async function bench(
+  snapshot = historySnapshot(NODES),
+  extraChildren: Record<string, unknown> = {},
+) {
   const ctx = new Context()
   const slots = new SlotRegistry(ctx)
   const loadOlder = vi.fn(() => Promise.resolve())
@@ -191,7 +194,10 @@ async function bench(snapshot = historySnapshot(NODES)) {
   // The conversation entry's role: declare the ring, then seed the chat entry.
   slots.register({
     name: 'root',
-    children: { 'conversation.view': { kind: 'list', scope: 'session' } },
+    children: {
+      'conversation.view': { kind: 'list', scope: 'session' },
+      ...extraChildren,
+    },
   }, (_p: { renderSlot?: unknown }) => null)
   const chatBody = vi.fn(() => <div data-testid="chat-body" />)
   slots.register(
@@ -230,10 +236,14 @@ function mount(slots: SlotRegistry, nodes: ConversationSnapshot['nodes'] = NODES
   const inputActions = {
     setDraft: vi.fn(), addImages: vi.fn(), removeImage: vi.fn(), pruneImages: vi.fn(), submit: vi.fn(),
   }
+  // Records every render-slot dispatch so tests can pin the bottom region's
+  // gating (chat view renders it; the full trajectory tab does not).
+  const renderLog: string[] = []
   // Minimal outlet twin: resolve the ring entry by the `only` filter and
   // render it with the session standard kit (what SlotOutlet does for a
   // list-kind session slot, minus machinery).
   const renderSlot = ((key: string, _owner: object, opts?: { only?: string }): ReactNode => {
+    renderLog.push(key)
     const entry = slots.entries('conversation.view').find(e => e.options.id === opts?.only)
     if (entry === undefined) return null
     const View = entry.component as FC<ConvViewProps>
@@ -260,42 +270,54 @@ function mount(slots: SlotRegistry, nodes: ConversationSnapshot['nodes'] = NODES
       />
     )
   }) as unknown as ConversationSessionProps['renderSlot']
-  return render(
-    <>
-      <ConversationSessionHeader
-        sessionId={SID}
-        SessionProvider={({ children }) => children(SID)}
-        useSession={useSession}
-        useSessions={emptySessions()}
-        useWorkspaces={emptyWorkspaces()}
-        useProjection={(() => undefined)}
-        useStore={bindSnapshotSelector(chat)}
-        actions={chat.actions}
-        renderSlot={() => null}
-        views={views}
-        useInput={useInput}
-        inputActions={inputActions}
-        open={vi.fn()}
-        t={tConversation}
-      />
-      <ConversationSession
-        sessionId={SID}
-        SessionProvider={({ children }) => children(SID)}
-        useSession={useSession}
-        useSessions={emptySessions()}
-        useWorkspaces={emptyWorkspaces()}
-        useProjection={(() => undefined)}
-        useStore={bindSnapshotSelector(chat)}
-        actions={chat.actions}
-        renderSlot={renderSlot}
-        views={views}
-        releaseSessionImages={vi.fn()}
-        useInput={useInput}
-        inputActions={inputActions}
-        bindDraftMirror={() => () => {}}
-      />
-    </>,
-  )
+  return {
+    ...render(
+      <>
+        <ConversationSessionHeader
+          sessionId={SID}
+          SessionProvider={({ children }) => children(SID)}
+          useSession={useSession}
+          useSessions={emptySessions()}
+          useWorkspaces={emptyWorkspaces()}
+          useProjection={(() => undefined)}
+          useStore={bindSnapshotSelector(chat)}
+          actions={chat.actions}
+          renderSlot={() => null}
+          views={views}
+          useInput={useInput}
+          inputActions={inputActions}
+          open={vi.fn()}
+          toggleFiles={vi.fn()}
+          t={tConversation}
+        />
+        <ConversationSession
+          sessionId={SID}
+          SessionProvider={({ children }) => children(SID)}
+          useSession={useSession}
+          useSessions={emptySessions()}
+          useWorkspaces={emptyWorkspaces()}
+          useProjection={(() => undefined)}
+          useStore={bindSnapshotSelector(chat)}
+          actions={chat.actions}
+          renderSlot={renderSlot}
+          views={views}
+          releaseSessionImages={vi.fn()}
+          useInput={useInput}
+          inputActions={inputActions}
+          bindDraftMirror={() => () => {}}
+          t={tConversation}
+        />
+      </>,
+    ),
+    // The chat store handle, so tests switch the view ring without tabs.
+    chat,
+    renderLog,
+  }
+}
+
+/** Switch the mounted view ring to the full trajectory (the Activity entry). */
+function openTrajectory(chat: { actions: { setView(view: string): void } }): void {
+  act(() => { chat.actions.setView('trajectory') })
 }
 
 describe('plugin registration', () => {
@@ -357,27 +379,78 @@ describe('plugin registration', () => {
   })
 })
 
-describe('tab switching in ConversationRoot', () => {
-  it('renders two tabs, defaults to chat, and switches to the trajectory ledger', async () => {
-    const b = await bench()
-    const view = mount(b.slots)
-    expect(screen.getByTestId('chat-body')).toBeTruthy()
-    expect(screen.getAllByRole('tab').map(t => t.textContent)).toEqual(['Chat', 'Trajectory'])
+describe('bottom panel registration and gating', () => {
+  it('registers the panel when the session body declares the bottom region, sharing the duration preference', async () => {
+    const b = await bench(
+      historySnapshot(NODES),
+      { 'conversation.session.bottom': { kind: 'single', scope: 'session' } },
+    )
+    const entries = b.slots.entries('conversation.session.bottom')
+    expect(entries).toHaveLength(1)
+    expect(entries[0]!.locale).toBe('trajectory')
+    const injectPanel = entries[0]!.inject as unknown as (
+      sessionId: SessionId,
+    ) => TrajectoryViewInjected
+    const viewEntry = b.slots.entries('conversation.view')
+      .find(candidate => candidate.options.id === 'trajectory')
+    const injectView = viewEntry!.inject as unknown as (
+      sessionId: SessionId,
+    ) => TrajectoryViewInjected
+    // One browser-wide duration store across both surfaces.
+    expect(injectPanel(SID).hooks.duration).toBe(injectView(SID).hooks.duration)
+    // Fiber disposal removes the panel entry with the tab.
+    await b.fiber.dispose()
+    expect(b.slots.entries('conversation.session.bottom')).toHaveLength(0)
+  })
 
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+  it('renders the bottom region beside chat and unmounts it on the full trajectory tab', async () => {
+    const b = await bench(
+      historySnapshot(NODES),
+      { 'conversation.session.bottom': { kind: 'single', scope: 'session' } },
+    )
+    const { chat, renderLog } = mount(b.slots)
+    // Chat view: the region renders after the view dispatch.
+    expect(renderLog).toContain('conversation.session.bottom')
+    const callsWithChat = renderLog.filter(key => key === 'conversation.session.bottom').length
+
+    openTrajectory(chat)
+    // Full trajectory tab: the bottom region is not dispatched any more (the
+    // same ledger must never render twice).
+    expect(
+      renderLog.filter(key => key === 'conversation.session.bottom').length,
+    ).toBe(callsWithChat)
+    expect(renderLog.at(-1)).toBe('conversation.view')
+
+    fireEvent.click(screen.getByRole('button', { name: '返回对话' }))
+    expect(
+      renderLog.filter(key => key === 'conversation.session.bottom').length,
+    ).toBe(callsWithChat + 1)
+  })
+})
+
+describe('tab switching in ConversationRoot', () => {
+  it('defaults to chat without a tab ring, and opens the trajectory ledger via the view store', async () => {
+    const b = await bench()
+    const { chat } = mount(b.slots)
+    expect(screen.getByTestId('chat-body')).toBeTruthy()
+    // The quiet header renders no peer tab ring; the Activity panel entry
+    // switches the view to the trajectory.
+    expect(screen.queryByRole('tab')).toBeNull()
+
+    openTrajectory(chat)
     expect(screen.queryByText(/turns ·/)).toBeNull()
-    expect(view.container.querySelectorAll('tr[data-turn-start="true"]')).toHaveLength(2)
     expect(screen.queryByRole('columnheader')).toBeNull()
     expect(screen.getByRole('toolbar', { name: '轨迹工具栏' })).toBeTruthy()
     expect(screen.getByRole('region', { name: 'Trajectory timeline' })).toBeTruthy()
-    expect(view.container.querySelector('[data-conversation-composer-overlay]')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Collapse turns' }))
-    expect(view.container.querySelector('[data-collapsed-summary="turn"]')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Expand turns' })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Expand turns' }))
     expect(screen.getByRole('row', { name: /USER/ })).toBeTruthy()
     expect(screen.queryByTestId('chat-body')).toBeNull()
     expect(b.loadOlder).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('tab', { name: 'Chat' }))
+    // The back bar is the only way back to the conversation.
+    fireEvent.click(screen.getByRole('button', { name: '返回对话' }))
+    expect(screen.getByTestId('chat-body')).toBeTruthy()
     expect(b.loadOlder).not.toHaveBeenCalled()
   })
 
@@ -394,8 +467,8 @@ describe('tab switching in ConversationRoot', () => {
 
   it('opens a local record inspector and switches payload tabs without opening chat details', async () => {
     const b = await bench()
-    mount(b.slots)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    const { chat } = mount(b.slots)
+    openTrajectory(chat)
 
     fireEvent.keyDown(screen.getByRole('row', { name: /TOOL/ }), { key: 'Enter' })
     expect(screen.getByRole('complementary', { name: 'Event details' })).toBeTruthy()
@@ -431,15 +504,15 @@ describe('tab switching in ConversationRoot', () => {
       summary: [{ type: 'text', text: 'standalone summary' }],
     }
     const b = await bench(historySnapshot(nodes, { requests: [compaction] }))
-    const view = mount(b.slots, nodes)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    const { chat, container } = mount(b.slots, nodes)
+    openTrajectory(chat)
 
     expect(screen.getByText('Between turns')).toBeTruthy()
-    expect(view.container.textContent).not.toContain('Turn null')
+    expect(container.textContent).not.toContain('Turn null')
 
     fireEvent.click(screen.getByRole('button', { name: 'Request #2 · Compaction' }))
     expect(screen.getByText('Compaction · Between turns')).toBeTruthy()
-    expect(view.container.textContent).not.toContain('Turn null')
+    expect(container.textContent).not.toContain('Turn null')
   })
 
   it('activates only the selected standalone compaction section', async () => {
@@ -483,8 +556,8 @@ describe('tab switching in ConversationRoot', () => {
       },
     ]
     const b = await bench(historySnapshot(nodes, { requests: compactions }))
-    mount(b.slots, nodes)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    const { chat } = mount(b.slots, nodes)
+    openTrajectory(chat)
 
     const firstRequest = screen.getByRole('button', { name: 'Request #2 · Compaction' })
     const secondRequest = screen.getByRole('button', { name: 'Request #4 · Compaction' })
@@ -508,8 +581,8 @@ describe('tab switching in ConversationRoot', () => {
 
   it('dragging the overview focuses overlapping records without filtering the ledger', async () => {
     const b = await bench()
-    mount(b.slots)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    const { chat } = mount(b.slots)
+    openTrajectory(chat)
     const plot = screen.getByLabelText('Timeline overview; drag horizontally to focus events')
     vi.spyOn(plot, 'getBoundingClientRect').mockReturnValue({
       x: 0, y: 0, left: 0, top: 0, right: 100, bottom: 72, width: 100, height: 72,
@@ -540,14 +613,14 @@ describe('tab switching in ConversationRoot', () => {
 
   it('clicking a timeline block clears the range, selects the record, and opens its inspector', async () => {
     const b = await bench()
-    const view = mount(b.slots)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    const { chat, container } = mount(b.slots)
+    openTrajectory(chat)
     const plot = screen.getByLabelText('Timeline overview; drag horizontally to focus events')
     vi.spyOn(plot, 'getBoundingClientRect').mockReturnValue({
       x: 0, y: 0, left: 0, top: 0, right: 100, bottom: 72, width: 100, height: 72,
       toJSON: () => ({}),
     })
-    const toolSpan = view.container.querySelector<HTMLElement>(
+    const toolSpan = container.querySelector<HTMLElement>(
       '[data-timeline-span="tool"]',
     )
     expect(toolSpan).not.toBeNull()
@@ -555,31 +628,31 @@ describe('tab switching in ConversationRoot', () => {
     expect(recordIndex).toBeTruthy()
 
     fireEvent.pointerMove(toolSpan as HTMLElement, { clientX: 50, pointerId: 1 })
-    expect(view.container.querySelector('[data-timeline-hover-line]')).toBeNull()
+    expect(container.querySelector('[data-timeline-hover-line]')).toBeNull()
     expect(toolSpan?.getAttribute('data-hovered')).toBe('true')
 
     fireEvent.pointerDown(plot, { button: 0, clientX: 5, pointerId: 1 })
     fireEvent.pointerMove(plot, { clientX: 95, pointerId: 1 })
     fireEvent.pointerUp(plot, { clientX: 95, pointerId: 1 })
-    expect(view.container.querySelector('tr[data-timeline-focus]')).toBeTruthy()
+    expect(container.querySelector('tr[data-timeline-focus]')).toBeTruthy()
 
     fireEvent.pointerDown(toolSpan as HTMLElement, {
       button: 0, clientX: 50, pointerId: 2,
     })
     fireEvent.pointerUp(toolSpan as HTMLElement, { clientX: 50, pointerId: 2 })
 
-    const selectedRow = view.container.querySelector<HTMLElement>(
+    const selectedRow = container.querySelector<HTMLElement>(
       `tr[data-record-index="${recordIndex}"]`,
     )
     expect(selectedRow?.getAttribute('aria-selected')).toBe('true')
-    expect(view.container.querySelector('tr[data-timeline-focus]')).toBeNull()
+    expect(container.querySelector('tr[data-timeline-focus]')).toBeNull()
     expect(screen.getByRole('complementary', { name: 'Event details' })).toBeTruthy()
   })
 
   it('empty window keeps the toolbar and reports no timing data', async () => {
     const b = await bench(historySnapshot([]))
-    mount(b.slots)
-    fireEvent.click(screen.getByRole('tab', { name: 'Trajectory' }))
+    const { chat } = mount(b.slots)
+    openTrajectory(chat)
     expect(screen.getByRole('toolbar', { name: '轨迹工具栏' })).toBeTruthy()
     expect(screen.getByText('No timing data')).toBeTruthy()
     expect(screen.getByRole<HTMLButtonElement>('button', {

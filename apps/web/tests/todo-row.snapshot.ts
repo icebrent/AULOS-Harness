@@ -46,6 +46,15 @@ describe('assembled todo surfaces', () => {
 
     const tree = await screen.findByRole('tree', { name: 'Sessions' }, { timeout: 10_000 })
     fireEvent.click(await within(tree).findByText('Fixture 历史会话'))
+    // The settled turns fold their tool activity; expand every fold so the
+    // keyed rows mount (the todo turn is the fixture's last).
+    await waitFor(() => {
+      const folds = [...document.querySelectorAll<HTMLElement>('button')]
+        .filter(el => el.getAttribute('aria-expanded') === 'false'
+          && /(?:Completed|已完成) · \d+ (?:tools|个工具)/.test(el.textContent ?? ''))
+      if (folds.length === 0) throw new Error('no settled activity folds mounted yet')
+      for (const fold of folds) fireEvent.click(fold)
+    }, { timeout: 10_000 })
     // The todo turn is the fixture's last, so wait for its keyed row rather
     // than for chat content in general.
     const row = await waitFor(() => {

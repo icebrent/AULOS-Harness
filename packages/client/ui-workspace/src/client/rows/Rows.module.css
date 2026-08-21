@@ -104,13 +104,25 @@
   height: 20px;
 }
 
-/* Session cell (figma): pad 8, a 16px status slot, then a 4px title gap. */
+/* Session cell (figma): pad 8, a 16px status slot, then a 4px title gap.
+   Two-line form: the title line plus the projection metadata line; rows
+   without metadata keep the historical 32px height. */
 .sessionRow {
-  height: 32px;
+  min-height: 32px;
   gap: 0;
+  padding: 2px 8px;
   /* Mount fade: session rows appear by unfolding a group (or the tree
      mounting). Stable row keys keep already-visible rows from replaying it. */
   animation: row-in 150ms var(--ds-ease-in-out);
+}
+
+.sessionMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0;
 }
 
 .sessionRow .title {
@@ -197,12 +209,46 @@
 }
 
 .meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 6px 0 4px;
+  min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12px;
-  line-height: 20px;
-  color: var(--dsw-alias-label-tertiary);
+  line-height: 16px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.metaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+/* Values read one step above the labels while staying clearly under the
+   session title's weight. */
+.metaValue {
+  font-weight: 600;
+}
+
+.contextBar {
+  display: inline-block;
+  width: 26px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--dsw-alias-border-soft);
+  overflow: hidden;
+}
+
+.contextBarFill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--dsw-alias-state-business-primary);
 }
 
 .time {

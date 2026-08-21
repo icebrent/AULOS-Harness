@@ -14,7 +14,9 @@ import type { ReplayEntry, ReplayOverrideDoc } from '@deepseek-ai/dsh-llm-replay
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import { createChatScrollFixture, type ChatScrollFixture } from './chat-scroll-fixture.ts'
 import {
+  backToConversation,
   launchWebScaffold,
+  openFullTrajectory,
   seedSession,
   watchConsole,
   webSnapshotMode,
@@ -275,7 +277,7 @@ async function openSeed(page: Page, fixture: ChatScrollFixture, tailMarker?: str
   const results = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem')
   await expect.poll(() => results.count(), { timeout: 60_000 }).toBe(1)
   await results.click()
-  await page.getByRole('tab', { name: 'Chat', exact: true }).waitFor({ timeout: 30_000 })
+  await page.locator('[data-conversation-scroll] [data-chat-anchor-key]').first().waitFor({ timeout: 30_000 })
   if (tailMarker !== undefined) {
     await page.getByText(tailMarker, { exact: false }).last().waitFor({ timeout: 30_000 })
   }
@@ -563,9 +565,11 @@ describe('web e2e: long Chat scroll contract', () => {
         await composer.fill(LIVE_TOOL_PROMPT)
         await world.page.getByRole('button', { name: 'Send message', exact: true }).click()
         await expect.poll(() => fileExists(readyPath), { timeout: 15_000 }).toBe(true)
-        const liveRow = world.page.locator(`[data-chat-call-id="${LIVE_TOOL_CALL_ID}"] [data-sample="bash"]`)
-        await liveRow.waitFor({ timeout: 15_000 })
-        expect(await liveRow.getAttribute('data-state')).toBe('running')
+        // The running turn's activity fold is the live block — recent tool
+        // names plus a count, not the raw row.
+        const liveFold = world.page.getByRole('status').filter({ hasText: 'Working…' })
+        await liveFold.waitFor({ timeout: 15_000 })
+        expect(await liveFold.textContent()).toContain('bash')
         await expectBottom(world.page)
 
         await wheelTranscript(world.page, -1_200)
@@ -606,6 +610,11 @@ describe('web e2e: long Chat scroll contract', () => {
       await expectBottom(world.page)
       await expectMarkerAboveComposer(world.page, LIVE_TOOL_DONE)
 
+      // The settled turn folds the tool row; expand the latest fold before
+      // anchoring on the raw row.
+      const settledFold = world.page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false }).last()
+      await settledFold.waitFor({ timeout: 15_000 })
+      await settledFold.click()
       const liveRowSelector = `[data-chat-call-id="${LIVE_TOOL_CALL_ID}"] [data-sample="bash"]`
       const liveRow = world.page.locator(liveRowSelector)
       await wheelUntilVisible(world.page, liveRowSelector, -300)
@@ -654,13 +663,12 @@ describe('web e2e: long Chat scroll contract', () => {
       await wheelTranscript(world.page, 1_300)
       const sessionAnchor = await visibleFlowAnchor(world.page)
 
-      await world.page.getByRole('tab', { name: 'Trajectory', exact: true }).click()
-      await world.page.getByLabel('Trajectory timeline').waitFor({ timeout: 30_000 })
+      await openFullTrajectory(world.page)
       await world.page.setViewportSize({ width: 700, height: 900 })
       // The narrow breakpoint auto-collapses the sidebar. Re-open it because
       // this scenario switches sessions while pinning the narrow Chat scroll owner.
       await world.page.getByRole('button', { name: 'Open sidebar', exact: true }).click()
-      await world.page.getByRole('tab', { name: 'Chat', exact: true }).click()
+      await backToConversation(world.page)
       await nextPaint(world.page)
       await expectSameFlowTop(world.page, sessionAnchor)
 
@@ -679,15 +687,9 @@ describe('web e2e: long Chat scroll contract', () => {
       await backToBottom.evaluate((button) => {
         if (!(button instanceof HTMLElement)) throw new Error('Back-to-bottom control is not an HTML element')
         button.click()
-        const trajectory = [...document.querySelectorAll<HTMLElement>('[role="tab"]')]
-          .find(tab => tab.textContent?.trim() === 'Trajectory')
-        if (!(trajectory instanceof HTMLElement)) {
-          throw new Error('Trajectory tab is unavailable during pinned remount')
-        }
-        trajectory.click()
       })
-      await world.page.getByLabel('Trajectory timeline').waitFor({ timeout: 30_000 })
-      await world.page.getByRole('tab', { name: 'Chat', exact: true }).click()
+      await openFullTrajectory(world.page)
+      await backToConversation(world.page)
       await expectBottom(world.page)
       await openSeed(
         world.page,
@@ -751,7 +753,11 @@ describe('web e2e: long Chat scroll contract', () => {
 
       // Focus rides the last seeded tool row (a tabbable button whose keydown
       // handler passes scrolling keys through). End first normalizes the
-      // focus-driven scrollIntoView back to the floor.
+      // focus-driven scrollIntoView back to the floor. The seeded turns fold
+      // their tool activity, so expand the last fold to reach the row.
+      const lastFold = world.page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false }).last()
+      await lastFold.waitFor({ timeout: 15_000 })
+      await lastFold.click()
       const lastToolRow = world.page.locator(
         `[data-chat-call-id="chat-scroll-${String(INPUTS_FIXTURE.turns).padStart(3, '0')}-1"] [data-sample="bash"]`,
       )

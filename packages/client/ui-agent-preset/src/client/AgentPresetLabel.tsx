@@ -1,5 +1,9 @@
 /**
- * The session header's agent-preset label.
+ * The session header's mode label.
+ *
+ * Names the current session's mode — Chat or Code for the two primary
+ * presets, otherwise the preset's own display name — so the header says what
+ * kind of session this is rather than exposing an internal preset id.
  *
  * Read-only by construction: a session's composition is fixed once its
  * conversation starts, and a header is only worth reading after that. Offering
@@ -16,6 +20,7 @@ import { IconAgentPresetOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type { AgentPresetSettingsState } from './settings-store.ts'
 import { presetDisplayText } from './locales.ts'
+import { modeNameKeyOf } from './modes.ts'
 import css from './AgentPresetLabel.module.css'
 
 /** Registration-side business face for the header label. */
@@ -35,7 +40,7 @@ export type AgentPresetLabelProps =
   & InjectFace<AgentPresetLabelInjected>
 
 /**
- * Render this session's agent-preset name beside its title.
+ * Render this session's mode name beside its title.
  * @param props - composed slot props.
  * @returns the label, or null when the session records no preset.
  */
@@ -54,11 +59,17 @@ export function AgentPresetLabel({
   if (preset === undefined) return null
 
   const option = options.find(entry => entry.id === preset)
+  const modeKey = modeNameKeyOf(preset)
+  // A primary-mode preset names its mode; anything else falls back to the
+  // preset's own display copy so advanced presets stay legible by name.
+  const label = modeKey === undefined
+    ? (option === undefined ? undefined : presetDisplayText(option, t).name)
+    : t(modeKey)
   const text = option === undefined ? undefined : presetDisplayText(option, t)
   return (
     <span className={css.label} title={text?.description ?? t('headerHint')}>
       <IconAgentPresetOutline16 size={14} className={css.icon} />
-      {text?.name ?? preset}
+      {label ?? preset}
     </span>
   )
 }

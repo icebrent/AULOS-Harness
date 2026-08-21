@@ -8,7 +8,8 @@
   flex-direction: column;
   height: 100%;
   min-width: 0;
-  background: var(--dsw-alias-bg-base);
+  /* The conversation is the white content surface of the workspace layout. */
+  background: var(--dsw-alias-surface);
 
   /* Shared width axis for the whole column: one content width W
      (--dsh-chat-content-width) for the transcript, the dock cards
@@ -25,29 +26,64 @@
   --dsh-composer-dock-inset: 8px;
 }
 
+/* Quiet session header: one title row with crumbs, the mode label, and
+   secondary utilities — no tabs, no runtime stats. */
 .header {
   position: relative;
   flex: none;
-  padding: 12px 28px 0 20px;
-  border-bottom: 1px solid transparent;
-}
-
-.header::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  bottom: 1px;
-  left: 0;
-  z-index: 0;
-  height: 1px;
-  background: var(--dsw-alias-border-l2);
-  pointer-events: none;
+  padding: 12px 24px 10px 20px;
+  border-bottom: 1px solid var(--dsw-alias-border-faint);
 }
 
 /* Blank hero/settling: keep the strict Session header mounted without taking
    column space; the root-owned scrollport and composer remain below it. */
 .headerHidden {
   display: none;
+}
+
+/* Left-aligned seat for the compact context card under the session header. */
+.contextCardSeat {
+  flex: none;
+  padding: 10px 24px 0 20px;
+}
+
+/* Bottom trajectory region inside the session flow: sticky just above the
+   composer seat (its live height rides --dsh-composer-height), so the panel
+   stays docked while the transcript scrolls beneath it. The panel entry
+   owns its own height and chrome. */
+.bottomSlot {
+  flex: none;
+  position: sticky;
+  bottom: var(--dsh-composer-height, 152px);
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  margin: 0 16px 8px;
+  border-radius: var(--dsw-alias-radius-md);
+  box-shadow: var(--dsw-alias-shadow-soft);
+  overflow: hidden;
+}
+
+.bottomSlot:empty {
+  display: none;
+}
+
+/* Quiet text utility button (Full Trajectory entry) beside the Files toggle. */
+.utilityButton {
+  height: 28px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  font-size: 12px;
+  line-height: 28px;
+  cursor: pointer;
+}
+
+.utilityButton:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
 }
 
 .titleRow {
@@ -82,7 +118,6 @@
 }
 
 .crumbSep {
-  /* figma: "/" separators are 14px caption gray (75:7903), one tint lighter than crumb text. */
   color: var(--dsw-alias-label-caption);
   font-size: 14px;
   line-height: 20px;
@@ -118,6 +153,19 @@
   cursor: default;
 }
 
+/* Small badge naming the advanced view (full trajectory) in the breadcrumb. */
+.viewBadge {
+  flex: none;
+  padding: 1px 8px;
+  border: 1px solid var(--dsw-alias-border-soft);
+  border-radius: 999px;
+  background: var(--dsw-alias-surface-tint);
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+  white-space: nowrap;
+}
+
 .headerActions {
   display: flex;
   flex: none;
@@ -137,49 +185,51 @@
   display: none;
 }
 
-/* figma Tab_Group 34:11441: 35px strip, gap 36, pad-left 8, tabs bottom-aligned. */
-.tabs {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  gap: 36px;
-  margin-top: 4px;
-  padding-left: 8px;
-}
-
-/* figma .Tab 34:11442: 13/16 text (figma wt510, rendered 500), gap 8 to the 2px bar. */
-.tab {
-  position: relative;
-  padding: 0 0 11px;
+/* Inspector toggle: quiet icon button in the header utilities. */
+.inspectorToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border: none;
+  border-radius: 8px;
   background: transparent;
-  font-size: 13px;
-  line-height: 16px;
-  font-weight: 500;
   color: var(--dsw-alias-label-tertiary);
   cursor: pointer;
 }
 
-.tab::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  bottom: 1px;
-  left: 0;
-  height: 2px;
-  border-radius: 2px;
-  background: transparent;
+.inspectorToggle:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-primary);
 }
 
-/* Selected tab is blue, not ink: brand-primary resolves to neutral black in
-   this token sheet, so the selected state rides the business blue — the
-   nearest semantic token that stays blue in both themes. */
-.tabActive {
-  color: var(--dsw-alias-state-business-primary);
+/* Slim back bar above a non-chat view (the full trajectory). */
+.viewBackBar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  padding: 6px 20px;
+  border-bottom: 1px solid var(--dsw-alias-border-faint);
 }
 
-.tabActive::after {
-  background: var(--dsw-alias-state-business-primary);
+.viewBack {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 6px;
+  border: 1px solid var(--dsw-alias-border-soft);
+  border-radius: 8px;
+  background: var(--dsw-alias-surface);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+
+.viewBack:hover {
+  border-color: var(--dsw-alias-border-l3);
+  color: var(--dsw-alias-label-primary);
 }
 
 .viewArea {
@@ -351,6 +401,25 @@
   gap: 2px;
   min-width: 0;
   margin-top: 4px;
+}
+
+/* The mode selector row (Chat / Code / More) under the workspace picker:
+   own breathing room above the cards. */
+.heroModeRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  margin-top: 8px;
+}
+
+/* The whole hero choice group (picker row + mode row): one left-aligned
+   column so both rows share the picker's alignment to the card's inner
+   controls below. */
+.heroPickerRows {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   /* figma drew px 8; nudged +12 so the chip's folder glyph lines up closer to
      the card's inner controls below. */
   padding-left: 20px;

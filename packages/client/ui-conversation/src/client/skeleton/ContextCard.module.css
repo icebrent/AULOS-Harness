@@ -1,0 +1,83 @@
+/* Compact context card: the right-inspector Context tab compressed into one
+   card row above the chat transcript. Same card vocabulary as the former
+   inspector sections (surface, hairline border, soft shadow), but a dense
+   four-group grid that stays left-aligned instead of filling the column. */
+
+.root {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  flex: none;
+  width: fit-content;
+  max-width: min(680px, 100%);
+  border: 1px solid var(--dsw-alias-border-soft);
+  border-radius: var(--dsw-alias-radius-md);
+  background: var(--dsw-alias-surface);
+  box-shadow: var(--dsw-alias-shadow-soft);
+  padding: 8px 4px;
+  overflow: hidden;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 0 12px;
+  border-left: 1px solid var(--dsw-alias-border-faint);
+}
+
+.group:first-child {
+  border-left: none;
+}
+
+.groupLabel {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 14px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.groupValue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.groupValueText {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-primary);
+  white-space: nowrap;
+}
+
+.groupSub {
+  font-size: 11px;
+  line-height: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-caption);
+  white-space: nowrap;
+}
+
+.ring {
+  flex: none;
+}
+
+.ringTrack {
+  fill: none;
+  stroke: var(--dsw-alias-border-soft);
+  stroke-width: 4;
+}
+
+.ringFill {
+  fill: none;
+  stroke: var(--dsw-alias-state-business-primary);
+  stroke-width: 4;
+  stroke-linecap: round;
+}

@@ -144,7 +144,7 @@ async function detailsTrack(page: Page): Promise<number> {
 const UI_PLUGIN_DIRS = [
   'connection', 'runtime', 'ui-theme', 'locale', 'ui-layout', 'ui-sidebar',
   'ui-settings', 'ui-settings-general', 'ui-settings-models', 'ui-conversation',
-  'ui-model-selection', 'ui-user-questions', 'ui-trajectory', '../session-query/session-log-export',
+  'ui-model-selection', 'ui-user-questions', 'ui-trajectory', 'ui-files', '../session-query/session-log-export',
 ]
 const ROUND_DONE_MARKER = 'WEB_ROUND_DONE'
 const notReady = UI_PLUGIN_DIRS.filter((dir) => {
@@ -579,32 +579,42 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY || notReady.length > 0)('web smoke
     await screen(page, '04-round-complete')
   }, 150_000)
 
-  it('view tabs: Chat and Trajectory switch', async () => {
+  it('trajectory opens from the header utility and the back bar returns to chat', async () => {
     onTestFailed(() => saveFailureShot(page, 'w5-tabs'))
-    await page.locator('button', { hasText: /Trajectory/i }).first().click()
+    // Inlined from scaffold's openFullTrajectory: this file must stay in the
+    // client aggregate, which cannot import the host-plane scaffold helper.
+    await page.getByRole('button', { name: 'Full trajectory', exact: true }).click()
+    await page.getByLabel('Trajectory timeline').waitFor({ timeout: 30_000 })
     await screen(page, '05-trajectory-tab')
-    await page.getByLabel('Trajectory timeline').waitFor()
     await expect.poll(() => page.getByRole('tab', { name: 'Waterfall' }).count()).toBe(0)
-    await page.locator('button', { hasText: /^Chat$/i }).first().click()
+    await page.getByRole('button', { name: 'Back to conversation', exact: true }).click()
+    await page.locator('[data-conversation-scroll] [data-chat-anchor-key]').first()
+      .waitFor({ timeout: 30_000 })
     await screen(page, '07-back-to-chat')
   })
 
-  it('bash differential rendering: tool row click leaves the default details column closed', async () => {
+  it('bash differential rendering: the settled fold reveals the tool row and its click keeps the Files column', async () => {
     onTestFailed(() => saveFailureShot(page, 'w5-tool-details'))
     const input = page.locator('textarea').first()
     await input.fill('请用 bash 工具运行命令 echo w5marker 然后告诉我结果')
     await input.press('Enter')
-    // Wait for the tool ROW, not response text (the reply echoes any marker).
+    // The settled turn folds its tool activity; expand the fold, then wait
+    // for the tool ROW, not response text (the reply echoes any marker).
     // Bash renders through the third-party sample registration. Match that
     // exact row: other clickable variants (for example Think disclosure)
     // may precede the tool call in document order.
+    const fold = page.getByRole('button', { name: /Completed · \d+ tools/ }).first()
+    await fold.waitFor({ timeout: 120_000 })
+    await fold.click()
     const toolRow = page.locator('[data-sample="bash"]')
     await toolRow.waitFor({ timeout: 120_000 })
     await screen(page, '08-bash-round')
-    expect(await detailsTrack(page)).toBe(0)
+    // The Files column is open by default and a tool-row click must not
+    // change its track (the embedded tool-details view is gone).
+    const before = await detailsTrack(page)
+    expect(before).toBeGreaterThan(0)
     await toolRow.click()
-    // Tool rows do not drive layout.openDetails; the default column stays closed.
-    expect(await detailsTrack(page)).toBe(0)
+    expect(await detailsTrack(page)).toBe(before)
     await screen(page, '09-details-closed')
   }, 150_000)
 

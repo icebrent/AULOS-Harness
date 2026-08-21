@@ -285,6 +285,11 @@ describe('web e2e: seeded history renders through cold resume', () => {
     expect(await page.getByText('Context compacted', { exact: true }).count()).toBe(0)
     // Tool cards render from logged tool/call + tool/result alone (views are
     // host-recomputed per page; the generic card is the documented default).
+    // The settled turns fold their tool activity, so expand every fold first.
+    const folds = page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false })
+    while (await folds.count() > 0) {
+      await folds.first().click()
+    }
     const toolRows = page.locator('[data-variant], [data-sample]')
     await expect.poll(() => toolRows.count(), { timeout: 10_000 }).toBeGreaterThanOrEqual(2)
     expect(await page.getByText('a.txt', { exact: false }).count()).toBeGreaterThan(0)
@@ -389,15 +394,23 @@ describe('web e2e: seeded history renders through cold resume', () => {
     await expect.poll(() => disclosure.getAttribute('aria-expanded')).toBe('false')
   })
 
-  it.skipIf(MODE === 'record')('file-path tool rows rebuilt from the cold log stay details-inert', async () => {
+  it.skipIf(MODE === 'record')('file-path tool rows rebuilt from the cold log keep the Files track', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-seeded-toolrow'))
     // Interaction over cold-resumed history: read summaries are host-open
     // file links (not expand-in-place / not details). Runs after the golden
-    // capture; still zero model calls.
+    // capture; still zero model calls. The settled turn folds its tool
+    // activity, so expand the fold (a previous scenario may already have) to
+    // reach the read row.
     const fileLink = page.locator('[data-variant="read"] button').first()
+    if (await fileLink.count() === 0) {
+      const fold = page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false }).first()
+      if (await fold.count() > 0) await fold.click()
+    }
     await fileLink.waitFor({ timeout: 10_000 })
     const frame = page.locator('[style*="grid-template-columns"]').first()
-    expect(await frame.getAttribute('data-details-collapsed')).toBe('true')
+    // The Files column is open by default; the host-open link must not change
+    // its track (the embedded tool-details view is gone).
+    expect(await frame.getAttribute('data-details-collapsed')).toBeNull()
     const openPath = vi.spyOn(scaffold.ctx.apiProxy.host, 'openPath')
       .mockImplementation(async (request, _signal) => ({
         rpcId: request.rpcId,
@@ -405,7 +418,7 @@ describe('web e2e: seeded history renders through cold resume', () => {
       }))
     try {
       await fileLink.click()
-      await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBe('true')
+      await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBeNull()
     } finally {
       openPath.mockRestore()
     }

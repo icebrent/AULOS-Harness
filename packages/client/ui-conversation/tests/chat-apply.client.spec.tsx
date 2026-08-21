@@ -46,7 +46,7 @@ async function bench() {
 }
 
 /** First stored entry for a key (inject/store live directly on StoredEntry). */
-function renderEntryOf(slots: Awaited<ReturnType<typeof bench>>['slots'], key: 'conversation' | 'conversation.session' | 'conversation.session.header' | 'conversation.view' | 'details') {
+function renderEntryOf(slots: Awaited<ReturnType<typeof bench>>['slots'], key: 'conversation' | 'conversation.session' | 'conversation.session.header' | 'conversation.view') {
   return slots.entries(key)[0] as undefined | { inject?: unknown; store?: unknown }
 }
 
@@ -78,15 +78,15 @@ describe('apply wiring', () => {
     const conversationSession = renderEntryOf(b.slots, 'conversation.session')
     const conversationHeader = renderEntryOf(b.slots, 'conversation.session.header')
     const chatView = renderEntryOf(b.slots, 'conversation.view')
-    const details = renderEntryOf(b.slots, 'details')
     expect(conversation?.inject).toBeTypeOf('function')
     expect(chatView?.inject).toBeTypeOf('function')
-    expect(details?.inject).toBeTypeOf('function')
-    // The shared handle: one apply-built store value on ALL session entries
-    // (the session-maybe 'conversation' shell carries no store by design).
+    // The shared handle: one apply-built store value on ALL strict session
+    // entries (the session-maybe 'conversation' shell carries no store by
+    // design — a handle mounted under two scopes would fail the slot core's
+    // one-handle-one-scope rule). The right column's 'details' slot belongs
+    // to the Files panel (ui-files) instead.
     expect(conversationSession?.store).toBeDefined()
     expect(conversationHeader?.store).toBe(conversationSession?.store)
-    expect(details?.store).toBe(conversationSession?.store)
     expect(chatView?.store).toBe(conversationSession?.store)
     // The hero holes ride the conversation entry's children declaration (the
     // empty-state occupant is gone). Both are root-scoped: the new-session
@@ -107,7 +107,7 @@ describe('apply wiring', () => {
     // one search row registers under both grep and glob; the web rows register
     // one component under both web tool names.
     expect(b.slots.entries('conversation.chat.node').map(entry => entry.options.key)).not.toContain('tool-call')
-    // Stats stick with the composer (not inside ChatView).
+    // The composer dock keeps the ambient stats strip beside the queue/todo rows.
     expect(b.slots.entries('conversation.composer.dock').map(e => e.options.id)).toEqual(['stats'])
     await b.runtime.dispose()
   })

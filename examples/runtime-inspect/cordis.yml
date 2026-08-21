@@ -1,0 +1,5 @@
+# Opt-in read-only Runtime Inspector for comparing Agent preset compositions.
+# It registers one global Tool so the same definition observes every preset.
+- insert:
+    - id: runtime-inspect
+      name: '@deepseek-ai/dsh-tool-cordis/runtime-inspect'

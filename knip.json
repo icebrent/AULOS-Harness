@@ -24,6 +24,7 @@
   "workspaces": {
     ".": {
       "entry": [
+        "scripts/build-exe-for-python-sdk.ts",
         "scripts/**/*.mjs",
         "scripts/**/*.cjs",
         "scripts/types/client-build-environment/index.d.ts"

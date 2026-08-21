@@ -1,7 +1,6 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
-import yaml from 'js-yaml'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   assertClientBuildEnvironment,
@@ -172,14 +171,10 @@ describe('client build environment', () => {
     expect(() => { readClientBuildRecord(official) }).toThrow(/artifacts differ/)
   })
 
-  it('keeps public client values out of workflow-wide environments', () => {
+  it('keeps upstream distribution workflows outside the AULOS source tree', () => {
     for (const name of dshBuildWorkflows) {
       const path = `.github/workflows/${name}`
-      const document: unknown = yaml.load(readFileSync(resolve(root, path), 'utf8'))
-      if (typeof document !== 'object' || document === null || Array.isArray(document)) {
-        throw new TypeError(`${path} must contain a workflow object`)
-      }
-      expect(JSON.stringify(document), path).not.toContain('DSH_CLIENT_')
+      expect(existsSync(resolve(root, path)), path).toBe(false)
     }
   })
 })

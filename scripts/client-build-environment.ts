@@ -22,6 +22,12 @@ const OFFICIAL_CLIENT_BUILD_ENVIRONMENT = {
   DSH_CLIENT_TITLE: 'DeepSeek Harness',
 } as const
 
+/** Public client environment required by AULOS artifacts. */
+const AULOS_CLIENT_BUILD_ENVIRONMENT = {
+  DSH_CLIENT_BUILD_PROFILE: 'aulos',
+  DSH_CLIENT_TITLE: 'AULOS Harness',
+} as const
+
 /** Public variable carrying the source commit embedded in client artifacts. */
 const CLIENT_COMMIT_HASH_VARIABLE = 'DSH_CLIENT_COMMIT_HASH'
 
@@ -120,7 +126,14 @@ export function resolveClientBuildEnvironment(
     }
     return { DSH_CLIENT_COMMIT_HASH: commitHash, ...OFFICIAL_CLIENT_BUILD_ENVIRONMENT }
   }
-  throw new Error(`unknown client build profile ${JSON.stringify(profile)}; expected "official"`)
+  if (profile === 'aulos') {
+    const commitHash = environment[CLIENT_COMMIT_HASH_VARIABLE]
+    if (commitHash === undefined) {
+      throw new Error(`${CLIENT_COMMIT_HASH_VARIABLE} is required for the AULOS client build profile`)
+    }
+    return { DSH_CLIENT_COMMIT_HASH: commitHash, ...AULOS_CLIENT_BUILD_ENVIRONMENT }
+  }
+  throw new Error(`unknown client build profile ${JSON.stringify(profile)}; expected "aulos" or "official"`)
 }
 
 /**

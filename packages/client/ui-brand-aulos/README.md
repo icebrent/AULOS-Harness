@@ -2,9 +2,9 @@
 
 English | [中文](README.zh.md)
 
-This package fills `sidebar.brand.mark`, `sidebar.brand.name`, and `conversation.hero.brand.mark` when `DSH_CLIENT_BUILD_PROFILE` is `aulos`. It keeps AULOS artwork outside the generic Sidebar, Hero, and primitives packages, so upstream presentation components remain replaceable without carrying brand-specific branches.
+This package fills `sidebar.brand.mark`, `sidebar.brand.name`, `conversation.hero.brand.mark`, `conversation.hero.title`, and `conversation.hero.subtitle` when `DSH_CLIENT_BUILD_PROFILE` is `aulos`. The Hero copy occupants render `Orchestrate Intelligence.` and `The Power of AI, Harnessed.` while the generic conversation shell retains their structure and typography. AULOS artwork and copy stay outside the generic Sidebar, Hero, and primitives packages, so upstream presentation components remain replaceable without carrying brand-specific branches.
 
-The three occupants install as one declaration-aware registration set through nested `slots.inject()` calls. The browser title is selected by the same AULOS build profile; the favicon and PWA identity remain deployment-owned public assets under `apps/web/public`.
+The five occupants install as one declaration-aware registration set through nested `slots.inject()` calls. The browser title is selected by the same AULOS build profile; the favicon and PWA identity remain deployment-owned public assets under `apps/web/public`.
 
 ## Model Experience
 

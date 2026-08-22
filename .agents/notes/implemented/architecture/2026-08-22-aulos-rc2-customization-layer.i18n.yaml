@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-08-22-aulos-rc2-customization-layer.md
-2026-08-22-aulos-rc2-customization-layer.md: 9091f65700984b28e5e2700d2ca0465d312de243
-2026-08-22-aulos-rc2-customization-layer.zh.md: 647ac212454b3c91a58ebd762eb53706aecb89ed
+2026-08-22-aulos-rc2-customization-layer.md: 0cac8b541db780485b566c6963d1f23f48fdf169
+2026-08-22-aulos-rc2-customization-layer.zh.md: 0612952e6573655c67ecf1ae7112574d71432539

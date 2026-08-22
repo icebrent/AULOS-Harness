@@ -27,7 +27,7 @@ import type { HeroShellProps } from '../src/client/skeleton/EmptyHero.tsx'
 import { InputBar } from '../src/client/skeleton/InputBar.tsx'
 import type { InputBarProps } from '../src/client/skeleton/InputBar.tsx'
 import type {
-  ComposerBarOwnerProps, ConversationHeaderLineageOwnerProps,
+  ComposerBarOwnerProps, ConversationHeaderLineageOwnerProps, HeroBrandCopyOwnerProps,
 } from '../src/client/contract/slots.ts'
 import type { ViewTab } from '../src/client/contract/views.ts'
 
@@ -242,6 +242,8 @@ function mount(
         />
       )
     }
+    if (key === 'conversation.hero.title') return opts?.fallback ?? null
+    if (key === 'conversation.hero.subtitle') return null
     return <div data-testid={`view-${opts?.only ?? key}`} />
   }) as ConversationRootProps['renderSlot']
   const renderSlotChain = ((_key, _owner, opts) => (
@@ -280,13 +282,20 @@ function mount(
 }
 
 describe('Hero chrome', () => {
-  it('renders the English preview badge through the hero locale seat', () => {
-    const renderSlot = vi.fn<HeroShellProps['renderSlot']>(() => null)
+  it('renders the upstream title fallback, no subtitle, and the independent Preview badge', () => {
+    const renderSlot = vi.fn<HeroShellProps['renderSlot']>((key, _owner, opts) => (
+      key === 'conversation.hero.title' ? opts?.fallback ?? null : null
+    ))
     const view = render(<HeroShell t={makeTranslate(en, commonEn)} renderSlot={renderSlot} />)
     expect(view.getByText('Into the Unknown')).toBeTruthy()
+    expect(view.container.querySelector('[class*="subtitle"]')).toBeNull()
     expect(view.getByText('Preview')).toBeTruthy()
-    expect(renderSlot).toHaveBeenCalledOnce()
+    expect(renderSlot).toHaveBeenCalledTimes(3)
     expect(renderSlot.mock.calls[0]?.[0]).toBe('conversation.hero.brand.mark')
+    expect(renderSlot.mock.calls[1]?.[0]).toBe('conversation.hero.title')
+    expect(renderSlot.mock.calls[1]?.[2]?.fallback).toBeTruthy()
+    expect(renderSlot.mock.calls[2]?.[0]).toBe('conversation.hero.subtitle')
+    expect(renderSlot.mock.calls[2]?.[2]).toBeUndefined()
     const brandMarkOwner = renderSlot.mock.calls[0]?.[1]
     if (brandMarkOwner === undefined || !('size' in brandMarkOwner) || !('className' in brandMarkOwner)) {
       throw new Error('hero brand-mark owner must provide size and className')
@@ -294,6 +303,23 @@ describe('Hero chrome', () => {
     expect(brandMarkOwner.size).toBe(34)
     expect(brandMarkOwner.className).toBeTypeOf('string')
     expect(renderSlot.mock.calls[0]?.[2]?.fallback).toBeTruthy()
+  })
+
+  it('lets title and subtitle occupants replace only the branding copy', () => {
+    const renderSlot = vi.fn<HeroShellProps['renderSlot']>((key, owner, opts) => {
+      if (key === 'conversation.hero.title') {
+        return <span className={(owner as HeroBrandCopyOwnerProps).className}>Branded title</span>
+      }
+      if (key === 'conversation.hero.subtitle') {
+        return <span className={(owner as HeroBrandCopyOwnerProps).className}>Branded subtitle</span>
+      }
+      return opts?.fallback ?? null
+    })
+    const view = render(<HeroShell t={makeTranslate(en, commonEn)} renderSlot={renderSlot} />)
+    expect(view.getByText('Branded title')).toBeTruthy()
+    expect(view.getByText('Branded subtitle')).toBeTruthy()
+    expect(view.queryByText('Into the Unknown')).toBeNull()
+    expect(view.getByText('Preview')).toBeTruthy()
   })
 })
 

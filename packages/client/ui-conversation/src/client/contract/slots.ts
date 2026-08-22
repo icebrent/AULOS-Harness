@@ -182,6 +182,16 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
      */
     'conversation.hero.brand.mark': { kind: 'single'; scope: 'root'; owner: HeroBrandMarkOwnerProps }
     /**
+     * Primary copy in the blank-session headline. The shell owns typography
+     * and supplies its localized product headline when no occupant registers.
+     */
+    'conversation.hero.title': { kind: 'single'; scope: 'root'; owner: HeroBrandCopyOwnerProps }
+    /**
+     * Optional secondary copy under the blank-session title. The shell owns
+     * typography and renders no second line when no occupant registers.
+     */
+    'conversation.hero.subtitle': { kind: 'single'; scope: 'root'; owner: HeroBrandCopyOwnerProps }
+    /**
      * The mode selector under the workspace picker on the new-session
      * screen: two primary entries (Chat / Code) plus a More menu for every
      * other preset. Root scope: no session exists yet, so the choice is
@@ -626,6 +636,12 @@ export interface HeroBrandMarkOwnerProps {
   className?: string | undefined
 }
 
+/** Presentation props supplied to a blank-session brand-copy occupant. */
+export interface HeroBrandCopyOwnerProps {
+  /** Host CSS class that preserves the shell-owned typography. */
+  className?: string | undefined
+}
+
 /**
  * Full conversation-slot component props: runtime & child-render (view ring
  * + composer chain/bar + input-region + hero picker slots) & injected shares
@@ -639,6 +655,7 @@ export type ConversationSlotProps =
     | 'conversation.input.dock' | 'conversation.composer.dock'
     | 'conversation.input.left' | 'conversation.input.right'
     | 'conversation.hero.brand.mark'
+    | 'conversation.hero.title' | 'conversation.hero.subtitle'
     | 'conversation.hero.workspace'
     | 'conversation.hero.agentPreset'
   >

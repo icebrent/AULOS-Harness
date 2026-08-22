@@ -2,9 +2,9 @@
 
 [English](README.md) | 中文
 
-当 `DSH_CLIENT_BUILD_PROFILE` 为 `aulos` 时，本包填充 `sidebar.brand.mark`、`sidebar.brand.name` 与 `conversation.hero.brand.mark`。AULOS 图稿不进入通用 Sidebar、Hero 和 primitives 包，因此跟随 upstream 更换展示组件时无需继续携带品牌专用分支。
+当 `DSH_CLIENT_BUILD_PROFILE` 为 `aulos` 时，本包填充 `sidebar.brand.mark`、`sidebar.brand.name`、`conversation.hero.brand.mark`、`conversation.hero.title` 与 `conversation.hero.subtitle`。Hero copy occupants 渲染 `Orchestrate Intelligence.` 与 `The Power of AI, Harnessed.`，结构和 typography 仍由通用 conversation shell 持有。AULOS 图稿与文案不进入通用 Sidebar、Hero 和 primitives 包，因此跟随 upstream 更换展示组件时无需继续携带品牌专用分支。
 
-三个 occupant 通过嵌套 `slots.inject()` 作为同一组可感知声明的注册一起安装。浏览器标题由同一个 AULOS build profile 选择；favicon 与 PWA identity 仍由 `apps/web/public` 下的 deployment public assets 持有。
+五个 occupant 通过嵌套 `slots.inject()` 作为同一组可感知声明的注册一起安装。浏览器标题由同一个 AULOS build profile 选择；favicon 与 PWA identity 仍由 `apps/web/public` 下的 deployment public assets 持有。
 
 ## 模型体验
 

@@ -1,7 +1,8 @@
 // Keyless replay of a real two-round Goal run. Each autonomous round ends as
 // its own turn, so the first answer must keep its IconActions when Goal opens
 // round two and the final answer must own a second, distinct action row.
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Browser, Page } from 'playwright'
@@ -21,6 +22,30 @@ const FIXTURE = join(SNAPSHOT_DIR, 'session.jsonl')
 const OVERRIDE = join(SNAPSHOT_DIR, 'replay.override.json')
 const UI_EXPECTED = join(SNAPSHOT_DIR, 'ui.expected.md')
 const MODE = webSnapshotMode()
+
+function adaptGoalReplayShell(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(adaptGoalReplayShell)
+  if (value === null || typeof value !== 'object') return value
+  const adapted = Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, adaptGoalReplayShell(entry)]))
+  if (adapted.name !== 'bash') return adapted
+  adapted.name = 'pwsh'
+  const argumentsJson = JSON.stringify({
+    command: "Write-Output 'GOAL_FIXTURE_SHELL_OK'",
+    description: 'Run the deterministic Goal fixture shell step',
+  })
+  if (typeof adapted.arguments === 'string') adapted.arguments = argumentsJson
+  if (typeof adapted.argumentsDelta === 'string') adapted.argumentsDelta = argumentsJson
+  if (Array.isArray(adapted.args)) {
+    adapted.args = adapted.args.map((_entry, index) => index === 0 ? argumentsJson : '')
+  }
+  return adapted
+}
+
+function adaptGoalJsonl(text: string): string {
+  return `${text.trimEnd().split(/\r?\n/u)
+    .map(line => JSON.stringify(adaptGoalReplayShell(JSON.parse(line))))
+    .join('\n')}\n`
+}
 
 const PROMPT = '做两个turn，每个turn输出随机一个包的文件结构。注意你做完一个turn之后，直接输出内容，停止，我们的系统会帮你再开一个turn，你看着做一个类似的'
 const COMMAND = `/goal ${PROMPT}`
@@ -94,6 +119,7 @@ describe('web e2e: Goal keeps one assistant action row per completed turn', () =
   let page: Page
   let tripwire: ReturnType<typeof watchConsole>
   let sessionEvents: SessionEvent[]
+  let replayDir: string | undefined
 
   afterEach(async () => {
     const failures: unknown[] = []
@@ -102,6 +128,10 @@ describe('web e2e: Goal keeps one assistant action row per completed turn', () =
     const closing = scaffold
     scaffold = undefined
     await closing?.close().catch((error: unknown) => failures.push(error))
+    if (replayDir !== undefined) {
+      await rm(replayDir, { recursive: true, force: true }).catch((error: unknown) => failures.push(error))
+      replayDir = undefined
+    }
     if (failures.length === 1) throw failures[0]
     if (failures.length > 1) throw new AggregateError(failures, 'goal-multi-turn-actions teardown failed')
   })
@@ -109,8 +139,19 @@ describe('web e2e: Goal keeps one assistant action row per completed turn', () =
   /** Boot the real Web composition and connect a fresh package fixture workspace. */
   async function launch(): Promise<void> {
     sessionEvents = []
+    let replayFixture = FIXTURE
+    let replayOverride = OVERRIDE
+    if (MODE !== 'record' && process.platform === 'win32') {
+      replayDir = await mkdtemp(join(tmpdir(), 'dsh-goal-pwsh-replay-'))
+      replayFixture = join(replayDir, 'session.jsonl')
+      replayOverride = join(replayDir, 'replay.override.json')
+      await writeFile(replayFixture, adaptGoalJsonl(await readFile(FIXTURE, 'utf8')))
+      await writeFile(replayOverride, JSON.stringify(adaptGoalReplayShell(
+        JSON.parse(await readFile(OVERRIDE, 'utf8')),
+      )))
+    }
     scaffold = await launchWebScaffold(
-      MODE === 'record' ? {} : { replayFixture: FIXTURE, replayOverride: OVERRIDE },
+      MODE === 'record' ? {} : { replayFixture, replayOverride },
     )
     await seedPackageInventory(scaffold.workspaceCwd)
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
@@ -156,7 +197,8 @@ describe('web e2e: Goal keeps one assistant action row per completed turn', () =
     expect(await branchButtons.evaluateAll(buttons => buttons.map(button => button.getAttribute('aria-disabled'))))
       .toEqual([null, null])
     await branchButtons.last().focus()
-    const snapshot = await captureStableAria(page, '[class*="centerCol"]', scaffold!.workspaceCwd)
+    const snapshot = (await captureStableAria(page, '[class*="centerCol"]', scaffold!.workspaceCwd))
+      .replaceAll('pwsh', 'bash')
     await compareOrRefreshGolden(UI_EXPECTED, snapshot, MODE)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])

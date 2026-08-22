@@ -1,12 +1,11 @@
 - banner:
   - navigation "Session hierarchy":
     - button "{{workspace}}" [disabled]
+  - button "Show or hide the Files panel"
+  - button "Full trajectory"
   - button "Session log":
     - text: Session log
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
 - text: m1 7/25 {{clock}}
 - button "Copy":
   - img
@@ -345,6 +344,9 @@
   - img
 - text: 7/25 {{clock}} Ran for {{duration}}
 - button "Back to bottom":
+  - img
+- button "Expand trajectory panel":
+  - text: Trajectory
   - img
 - textbox "Message the agent"
 - button "Commands":

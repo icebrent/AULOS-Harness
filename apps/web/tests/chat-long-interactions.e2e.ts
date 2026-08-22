@@ -31,6 +31,9 @@ const TARGET_CALL_2 = 'chat-scroll-088-2'
 const CONTINUE_PROMPT = 'CHAT_INTERACTION_CONTINUE Continue from this exact branch point.'
 const CONTINUE_FIRST = 'CHAT_INTERACTION_CONTINUE_FIRST'
 const CONTINUE_DONE = 'CHAT_INTERACTION_CONTINUE_DONE'
+const LIVE_SHELL_ROW = process.platform === 'win32'
+  ? '[data-tool="pwsh"] [role="button"]'
+  : '[data-sample="bash"]'
 const FIXTURE = createChatScrollFixture({
   markerPrefix: 'INTERACTION',
   title: 'CHAT_INTERACTION long semantic identity session',
@@ -151,7 +154,10 @@ describe('web e2e: long Chat interaction contract', () => {
       replayContextWindow: 10_000_000,
       paceMs: 18,
     })
-    await seedSession(scaffold, FIXTURE.log, SESSION_ID)
+    const platformLog = process.platform === 'win32'
+      ? FIXTURE.log.replaceAll('"name":"bash"', '"name":"pwsh"')
+      : FIXTURE.log
+    await seedSession(scaffold, platformLog, SESSION_ID)
     browser = await chromium.launch()
     page = await newEnglishPage(browser, 900)
     tripwire = watchConsole(page)
@@ -242,8 +248,8 @@ describe('web e2e: long Chat interaction contract', () => {
     ))))
     expect(toolKinds).toEqual(['tool-call', 'tool-call'])
 
-    const summary1 = call1.locator('[data-sample="bash"]')
-    const summary2 = call2.locator('[data-sample="bash"]')
+    const summary1 = call1.locator(LIVE_SHELL_ROW)
+    const summary2 = call2.locator(LIVE_SHELL_ROW)
     expect(await summary1.getAttribute('aria-expanded')).toBe('false')
     expect(await summary2.getAttribute('aria-expanded')).toBe('false')
     await summary2.focus()

@@ -27,7 +27,7 @@ export interface ILayout {
   openDetails(): void
   /** Close the details panel. */
   closeDetails(): void
-  /** Toggle the details/inspector panel (closed ⟷ contract default width). */
+  /** Toggle the details panel (closed ⟷ contract default width). */
   toggleDetails(): void
 }
 
@@ -61,7 +61,7 @@ export class LayoutController implements ILayout {
     this.#require().closeDetails()
   }
 
-  /** Toggle the details/inspector panel (closed ⟷ contract default width). */
+  /** Toggle the details panel (closed ⟷ contract default width). */
   toggleDetails(): void {
     this.#require().toggleDetails()
   }

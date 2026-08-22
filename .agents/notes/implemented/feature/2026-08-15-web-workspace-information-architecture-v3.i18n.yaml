@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-15-web-workspace-information-architecture-v3.md
 2026-08-15-web-workspace-information-architecture-v3.md: 6942828581333c5ffed87c285ad5fe88892ec5c0
-2026-08-15-web-workspace-information-architecture-v3.zh.md: aaf44c29c50676cfcde5cca090025e765fcdc75b
+2026-08-15-web-workspace-information-architecture-v3.zh.md: 78f368a0d168a1710670861769869cbc4b04bb30

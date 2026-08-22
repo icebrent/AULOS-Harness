@@ -27,9 +27,13 @@ AULOS Harness 是一个个人维护的 custom build，目前仍在持续开发�
 
 项目会在合适的时候跟进 DeepSeek Harness upstream，但会保留自己的产品、交互和视觉方向。
 
+<a id="run"></a>
+
 ## 运行
 
 AULOS 目前从本仓库源码分发，不提供单独的 npm 包。
+
+<a id="run-from-source"></a>
 
 ### 从源码运行
 
@@ -45,7 +49,7 @@ Web UI 默认监听 `http://127.0.0.1:3080`。默认构建选择 AULOS client pr
 
 AULOS Harness 基于 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)。
 
-当前自定义层基于官方 `dsh@0.1.0-rc.8` release。AULOS 产品能力位于聚焦的 packages 与构建期 branding slots 中，而非全仓 upstream rename。
+当前自定义层基于官方 `dsh@0.1.1-rc.2` release。AULOS 产品能力位于聚焦的 packages 与构建期 branding slots 中，而非全仓 upstream rename。
 
 原版 Harness 的安装、使用、架构、开发说明等详细资料，请直接参考官方仓库。
 

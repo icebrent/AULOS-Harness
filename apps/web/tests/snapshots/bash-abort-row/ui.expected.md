@@ -1,12 +1,12 @@
 - banner:
   - navigation "Session hierarchy":
     - 'button "Run two shell commands: wait" [disabled]'
+  - button "Show or hide the Files panel"
+  - button "Full trajectory"
   - button "Session log":
     - text: Session log
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+- group "Current session context figures": Context — Tokens 10 / 10 Input / Output Cache 0% 0 / 0 TTFT {{duration}} {{throughput}} tok/s
 - text: "Run two shell commands: wait for cancellation, then write skipped.txt. {{clock}}"
 - button "Copy":
   - img
@@ -14,6 +14,7 @@
   - img
   - img
   - text: Context injection @deepseek-ai/dsh-system-prompt
+- button "Completed · 2 tools"
 - 'button "Failed Bash Error: tool call aborted" [expanded]':
   - img
   - text: "Failed Bash Error: tool call aborted"
@@ -22,6 +23,9 @@
 - 'button "Failed Bash Error: tool call aborted before dispatch"':
   - img
   - text: "Failed Bash Error: tool call aborted before dispatch"
+- button "Expand trajectory panel":
+  - text: Trajectory
+  - img
 - textbox "Message the agent"
 - button "Commands":
   - img

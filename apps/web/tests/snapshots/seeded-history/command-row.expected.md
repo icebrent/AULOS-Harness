@@ -1,15 +1,16 @@
 - banner:
   - navigation "Session hierarchy":
     - button "Use the read tool twice" [disabled]
+  - button "Show or hide the Files panel"
+  - button "Full trajectory"
   - button "Session log":
     - text: Session log
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+- group "Current session context figures": Context — Tokens 15.8K / 135 Input / Output Cache 98% 15.5K / 0 TTFT {{duration}} {{throughput}} tok/s
 - text: "Use the read tool twice in one assistant message: read a.txt and b.txt. Then reply with the single word DONE and stop. 7/25 {{clock}}"
 - button "Copy":
   - img
+- button "Completed · 2 tools" [expanded]
 - button "Think The user wants me to read a.txt and b.txt, then reply with \"DONE\". Let me do both reads in parallel.":
   - img
   - img
@@ -45,6 +46,9 @@
   - text: Context injection AGENTS.md
 - img
 - text: permission preset read-only
+- button "Expand trajectory panel":
+  - text: Trajectory
+  - img
 - textbox "Message the agent"
 - button "Commands":
   - img

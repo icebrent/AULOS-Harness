@@ -433,8 +433,8 @@ describe('tab switching in ConversationRoot', () => {
     const b = await bench()
     const { chat } = mount(b.slots)
     expect(screen.getByTestId('chat-body')).toBeTruthy()
-    // The quiet header renders no peer tab ring; the Activity panel entry
-    // switches the view to the trajectory.
+    // The quiet header renders no peer tab ring; its trajectory utility
+    // switches the view to the full trajectory.
     expect(screen.queryByRole('tab')).toBeNull()
 
     openTrajectory(chat)

@@ -2,4 +2,4 @@
   - treeitem "workspace" [expanded]:
     - img
     - text: workspace
-  - treeitem "Ask a research subagent to now"
+  - treeitem "Ask a research subagent to 7.8K Cache 99% Context 6% now"

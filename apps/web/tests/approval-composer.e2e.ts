@@ -11,9 +11,10 @@
 // Geometry is the point of the scenario. The command is unbounded model text,
 // and an uncapped card grows with it until the refuse/allow buttons leave the
 // viewport — an approval the user could see and not answer.
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
@@ -51,10 +52,18 @@ describe('web e2e: approval takeover keeps its actions reachable', () => {
   let browser: Browser
   let page: Page
   let tripwire: ReturnType<typeof watchConsole>
+  let replayDir: string | undefined
   const sessionEvents: SessionEvent[] = []
 
   beforeAll(async () => {
-    scaffold = await launchWebScaffold(MODE === 'record' ? {} : { replayFixture: FIXTURE, paceMs: 15 })
+    let replayFixture = FIXTURE
+    if (MODE !== 'record' && process.platform === 'win32') {
+      replayDir = await mkdtemp(join(tmpdir(), 'dsh-approval-pwsh-replay-'))
+      replayFixture = join(replayDir, 'session.jsonl')
+      await writeFile(replayFixture, (await readFile(FIXTURE, 'utf8'))
+        .replaceAll('"name":"bash"', '"name":"pwsh"'))
+    }
+    scaffold = await launchWebScaffold(MODE === 'record' ? {} : { replayFixture, paceMs: 15 })
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
     page = await newEnglishPage(browser)
@@ -67,6 +76,7 @@ describe('web e2e: approval takeover keeps its actions reachable', () => {
   afterAll(async () => {
     await browser?.close()
     await scaffold?.close()
+    if (replayDir !== undefined) await rm(replayDir, { recursive: true, force: true })
   })
 
   it('caps the long command, answers through the panel, and runs the escalated command', async () => {

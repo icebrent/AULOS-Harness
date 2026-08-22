@@ -27,9 +27,13 @@ AULOS Harness is a personally maintained custom build, still under active develo
 
 It follows the DeepSeek Harness upstream when appropriate, while keeping its own product, interaction, and visual direction.
 
+<a id="run"></a>
+
 ## Run
 
 AULOS is currently distributed from this repository rather than as a separate npm package.
+
+<a id="run-from-source"></a>
 
 ### Run from source
 
@@ -45,7 +49,7 @@ The Web UI listens on `http://127.0.0.1:3080` by default. The default build sele
 
 AULOS Harness is built on [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness).
 
-The current customization layer is based on the official `dsh@0.1.0-rc.8` release. AULOS product features live in focused packages and build-time branding slots rather than a repository-wide upstream rename.
+The current customization layer is based on the official `dsh@0.1.1-rc.2` release. AULOS product features live in focused packages and build-time branding slots rather than a repository-wide upstream rename.
 
 For the original Harness's installation, usage, architecture, and development documentation, refer directly to the official repository.
 

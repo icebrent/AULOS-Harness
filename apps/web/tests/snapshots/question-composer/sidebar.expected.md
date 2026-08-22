@@ -1,1 +1,1 @@
-- treeitem "Waiting for answer Use the ask_user_question tool to now" [selected]
+- treeitem "Waiting for answer Use the ask_user_question tool to 4.2K Cache 97% Context 3% now" [selected]

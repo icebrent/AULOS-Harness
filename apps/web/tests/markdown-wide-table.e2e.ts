@@ -194,15 +194,15 @@ interface TableStop {
 }
 
 /**
- * Close the details pane so the transcript spans the viewport. Open, it pins
+ * Close the Files pane so the transcript spans the viewport. Open, it pins
  * the transcript to exactly the message column and every breakout relation
  * would go vacuous.
  * @param target - the page whose pane to close.
  */
 async function closeDetailsPane(target: Page): Promise<void> {
-  await target.getByRole('button', { name: 'Close details', exact: true }).waitFor({ timeout: 10_000 })
+  await target.getByRole('button', { name: 'Hide the Files panel', exact: true }).waitFor({ timeout: 10_000 })
   await target.evaluate(() => {
-    document.querySelector<HTMLElement>('button[aria-label="Close details"]')?.click()
+    document.querySelector<HTMLElement>('button[aria-label="Hide the Files panel"]')?.click()
   })
   // Closed details resolve to zero width but never unmount (ui-layout
   // columns contract), so the settled signal is the frame's collapse marker,

@@ -1,12 +1,12 @@
 - banner:
   - navigation "Session hierarchy":
     - button "Load the editing-cordis-compositions ski" [disabled]
+  - button "Show or hide the Files panel"
+  - button "Full trajectory"
   - button "Session log":
     - text: Session log
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+- group "Current session context figures": Context — Tokens 280 / 30 Input / Output Cache 0% 0 / 0 TTFT {{duration}} {{throughput}} tok/s
 - text: Load the editing-cordis-compositions skill with the skill tool, then reply DONE. {{date}} {{clock}}
 - button "Copy":
   - img
@@ -18,6 +18,7 @@
   - img
   - img
   - text: Context injection skill-catalog
+- button "Completed · 1 tools" [expanded]
 - button "Think Load the requested skill.":
   - img
   - img
@@ -41,6 +42,9 @@
 - button "Branch into a new conversation":
   - img
 - text: {{date}} {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
+- button "Expand trajectory panel":
+  - text: Trajectory
+  - img
 - textbox "Message the agent"
 - button "Commands":
   - img

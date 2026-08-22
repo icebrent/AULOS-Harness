@@ -2,7 +2,7 @@
 
 [English](README.md) | 中文
 
-Files 面板插件：右栏的项目文件树，数据全部来自宿主的目录列表 seam。它在 [ui-layout](../ui-layout/README.md) 声明的 `details` 槽注册一个条目，并把 `ctx.workspaces.listDirectory` 与 layout 的关闭动作绑定为面板的注入回调。文件树是纯展示：每一行都来自 seam 的单层 `DirectoryListing`（`entries` 目录 + `files` 文件），这里不重新推导路径、不递归扫描层级。
+Files 面板插件：右栏的项目文件树，数据全部来自宿主的目录列表 seam。它在 [ui-layout](../ui-layout/README.zh.md) 声明的 `details` 槽注册一个条目，并把 `ctx.workspaces.listDirectory` 与 layout 的关闭动作绑定为面板的注入回调。文件树是纯展示：每一行都来自 seam 的单层 `DirectoryListing`（`entries` 目录 + `files` 文件），这里不重新推导路径、不递归扫描层级。
 
 展开是懒加载的——目录只在首次展开时才列出，请求可中止，且会取代同一层级仍在途的请求。切换工作区会改变当前会话的 `cwd`；面板随之重新加载根目录、中止所有在途层级并重置展开与选中状态。根层级渲染本地化的加载中 / 空目录 / 错误状态；失败的列表提供重试，被截断的层级显示"更多条目"标记，隐藏行与其他行一样渲染。文件单击选中、双击经 `ctx.workspaces.openPath` 用宿主默认应用打开；面板的关闭按钮调用 `ctx.layout.closeDetails`。
 

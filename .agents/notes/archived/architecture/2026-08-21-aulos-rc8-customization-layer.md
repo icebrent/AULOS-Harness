@@ -1,6 +1,7 @@
 # Agent Note: AULOS customization layer on the rc.8 foundation
 
 Status: implemented
+Archived: 2026-08-22
 
 English | [中文](2026-08-21-aulos-rc8-customization-layer.zh.md)
 

@@ -12,7 +12,7 @@ Status: implemented
 
 独立的 `@deepseek-ai/dsh-tool-cordis/runtime-inspect` 入口会在 global 工具层注册一个只读 `inspect_runtime` 工具。可选的 `examples/runtime-inspect` overlay 只加载该子路径，因此无需编辑 preset 或加载本包的动态 Cordis authoring 工具，同一个定义就能检查由不同 preset 组装的新 agent。不加载该 overlay 就会完全移除这项诊断。
 
-报告把 `ctx.tools.schemas(agent)` 读取为 scoped capability catalog，把 `ctx.systemPrompt.assemble({ scope: agent, agent })` 在 waterfall（瀑布式事件）之后的结果读取为模型实际获得的目录。这保留了 [per-agent 工具 presentation](../feature/2026-08-05-per-agent-tool-presentation.md) 所约定的区别：Code Mode 可以保留许多 scoped capability，同时仅以原生方式呈现 `run_code`。报告会对比两个名称集合，描述最终提示词 section，记录 live 与从 Session 推导的 preset identity，并检查一组固定的 mutation、execution、delegation、terminal、workflow、Ralph 与 Git 相关工具名称。
+报告把 `ctx.tools.schemas(agent)` 读取为 scoped capability catalog，把 `ctx.systemPrompt.assemble({ scope: agent, agent })` 在 waterfall（瀑布式事件）之后的结果读取为模型实际获得的目录。这保留了 [per-agent 工具 presentation](../feature/2026-08-05-per-agent-tool-presentation.zh.md) 所约定的区别：Code Mode 可以保留许多 scoped capability，同时仅以原生方式呈现 `run_code`。报告会对比两个名称集合，描述最终提示词 section，记录 live 与从 Session 推导的 preset identity，并检查一组固定的 mutation、execution、delegation、terminal、workflow、Ralph 与 Git 相关工具名称。
 
 诊断只把 provenance 报告为 `global` 或 `scoped-chain`。当 global 与 scoped lookup 解析到同一个工具定义时，它可以证明 `global`。`ToolRuntime` 不保留注册插件 identity，也不暴露单独的 ancestor layer，因此诊断不会虚构插件或 preset source。`PromptAssembly` 同样只保留最终 section 顺序，而不保留各项注册时的数值 order；报告中的 `order` 是 assembly 后从零开始的有效位置。
 

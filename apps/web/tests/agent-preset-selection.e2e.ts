@@ -303,11 +303,16 @@ describe('web e2e: agent-preset selection', () => {
 
   it('labels a resumed session with the mode it was created under', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-agent-preset-header'))
-    // The seeded session's cwd is the scaffold root rather than the connected
-    // workspace, so it lists under Ungrouped; the group collapses by default.
-    await page.getByRole('treeitem', { name: /^Ungrouped/ }).click()
-    await page.locator('[role="treeitem"]').last().click()
-    await page.getByText('Seeded turn.').waitFor({ timeout: 15_000 })
+    // Address the cold seeded session by persisted content so blank-session
+    // pinning and group expansion state cannot change which row is resumed.
+    const searchButton = page.getByRole('button', { name: 'Search sessions' })
+    if (await searchButton.getAttribute('aria-expanded') !== 'true') await searchButton.click()
+    const search = page.getByPlaceholder('Search sessions', { exact: false })
+    await search.fill('Seeded turn')
+    const seeded = page.getByRole('tree', { name: 'Search results' }).getByRole('treeitem')
+    await expect.poll(() => seeded.count(), { timeout: 15_000 }).toBe(1)
+    await seeded.click()
+    await page.getByText('Seeded turn.', { exact: true }).last().waitFor({ timeout: 15_000 })
 
     const snapshot = await captureStableAria(page, '[class*="titleRow"]', scaffold.workspaceCwd)
 

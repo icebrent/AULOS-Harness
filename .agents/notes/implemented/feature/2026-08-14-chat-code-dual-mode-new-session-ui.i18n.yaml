@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-14-chat-code-dual-mode-new-session-ui.md
 2026-08-14-chat-code-dual-mode-new-session-ui.md: 9c11e68a6df1ba4b1ab262528888e55274c84bf5
-2026-08-14-chat-code-dual-mode-new-session-ui.zh.md: d5df18b4bcaa013cc7966aa16bf7bd6dcb422ecc
+2026-08-14-chat-code-dual-mode-new-session-ui.zh.md: 28fe21e3c3ea7527747cba5c0ef4384a240439f9

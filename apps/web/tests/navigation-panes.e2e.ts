@@ -29,6 +29,12 @@ const SEARCH_EXPECTED = join(SNAPSHOT_DIR, 'search-results.expected.md')
 const TERMINAL_EXPECTED = join(SNAPSHOT_DIR, 'terminal-card.expected.md')
 const MODE = webSnapshotMode()
 const SEED_ID = 'navigation-panes-web-e2e'
+const LIVE_SHELL_ROW = process.platform === 'win32'
+  ? '[data-tool="pwsh"] [role="button"]'
+  : '[data-sample="bash"]'
+const LIVE_SHELL_CARD = process.platform === 'win32'
+  ? '[data-tool="pwsh"] [data-terminal]'
+  : '[data-sample="bash"] ~ div [data-terminal]'
 
 // Turn 1 leads with a distinctive word: the session-title fallback takes the
 // first words of the first message, so the sidebar-search scenario has a
@@ -101,7 +107,10 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
       const raw = await readFile(SEED, 'utf8')
       expect(fixtureUserPrompts(raw), 'seed fixture must carry exactly the two drive prompts')
         .toEqual([PROMPT_TURN1, PROMPT_TURN2])
-      await seedSession(scaffold, raw, SEED_ID)
+      const platformSeed = process.platform === 'win32'
+        ? raw.replaceAll('"name":"bash"', '"name":"pwsh"')
+        : raw
+      await seedSession(scaffold, platformSeed, SEED_ID)
     }
     browser = await chromium.launch()
   }, 120_000)
@@ -288,6 +297,8 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     expect(assistantTimingStyle.ttft).toMatch(/%$/)
     const snapshot = (await captureStableAria(page, '[class*="viewArea"]', scaffold.workspaceCwd))
       .split(SEED_ID).join('{{seededId}}')
+      .replaceAll('{{cwd}}/workspace', '{{cwd}}')
+      .replaceAll('pwsh', 'bash')
     await compareOrRefreshGolden(TRAJECTORY_EXPECTED, snapshot, MODE)
     await details.getByRole('button', { name: 'Close details' }).click()
   }, 60_000)
@@ -401,26 +412,26 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     await expect.poll(() => page.locator('tr[data-timeline-focus]').count(), { timeout: 10_000 }).toBe(0)
   }, 60_000)
 
-  it.skipIf(MODE === 'record')('bash and file-path rows keep the Files column track unchanged', async () => {
+  it.skipIf(MODE === 'record')('shell and file-path rows keep the Files column track unchanged', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-navigation-details'))
     await ensureSeedOpen(page)
     // The settled turn folds its tool activity; expand the fold to reach the rows.
     const fold = page.getByRole('button', { name: /Completed · \d+ tools/ }).first()
     await fold.waitFor({ timeout: 15_000 })
     await fold.click()
-    const bashRow = page.locator('[data-sample="bash"]').first()
-    await bashRow.waitFor({ timeout: 15_000 })
+    const shellRow = page.locator(LIVE_SHELL_ROW).first()
+    await shellRow.waitFor({ timeout: 15_000 })
     const frame = page.locator('[style*="grid-template-columns"]').first()
     // The Files column is open by default; tool-row interactions must not
     // change its track; Tool arguments and results live in the trajectory surfaces.
     expect(await frame.getAttribute('data-details-collapsed')).toBeNull()
     // The row click is the card's expand toggle (unified tool-row
     // interaction); it must not drive layout geometry either way.
-    await bashRow.click()
+    await shellRow.click()
     await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBeNull()
     // The card's own controls are outside the summary row and must not change
     // the column either — the expanded terminal card is read in place.
-    await page.locator('[data-sample="bash"] ~ div [data-terminal] [class*="_copyButton_"]').first().click()
+    await page.locator(`${LIVE_SHELL_CARD} [class*="_copyButton_"]`).first().click()
     await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBeNull()
     // Read summaries are host-open file links; they also keep the track.
     const fileLink = page.locator('[data-variant="read"] button').first()
@@ -438,7 +449,7 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     }
   }, 60_000)
 
-  it.skipIf(MODE === 'record')('renders the bash row as a terminal card in the real browser', async () => {
+  it.skipIf(MODE === 'record')('renders the shell row as a terminal card in the real browser', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-navigation-terminal'))
     await ensureSeedOpen(page)
     // The settled turn folds its tool activity; expand the fold if a previous
@@ -449,10 +460,10 @@ describe('web e2e: navigation & panes over a rich seeded session', () => {
     // alone.
     const fold = page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false }).first()
     if (await fold.count() > 0) await fold.click()
-    const bashRow = page.locator('[data-sample="bash"]').first()
-    await bashRow.waitFor({ timeout: 15_000 })
-    if (await bashRow.getAttribute('aria-expanded') !== 'true') await bashRow.click()
-    const card = page.locator('[data-sample="bash"] ~ div [data-terminal]').first()
+    const shellRow = page.locator(LIVE_SHELL_ROW).first()
+    await shellRow.waitFor({ timeout: 15_000 })
+    if (await shellRow.getAttribute('aria-expanded') !== 'true') await shellRow.click()
+    const card = page.locator(LIVE_SHELL_CARD).first()
     await card.waitFor({ timeout: 15_000 })
     // Real layout, not jsdom's stub (which computes no geometry at all):
     // squeeze the output pane below its content width and the line must keep

@@ -25,10 +25,15 @@
   - img
   - text: workspace
   - img
-- button "Standard mode":
-  - img
-  - text: Standard mode
-  - img
+- group "Agent preset for the session you are about to start":
+  - button "Code" [pressed]:
+    - img
+    - text: Code
+    - img
+  - button "More":
+    - img
+    - text: More
+    - img
 - textbox "Describe what you want to build"
 - button "Commands":
   - img
@@ -38,6 +43,11 @@
   - text: DeepSeek-V4-Flash
   - img
 - button "Send message" [disabled]
-- text: Details
-- button "Close details"
-- text: Click a tool row in the message flow to view its details
+- banner:
+  - text: Files
+  - button "Refresh file tree":
+    - img
+  - button "Hide the Files panel":
+    - img
+- text: workspace
+- tree "Files": Empty directory

@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/testing/2026-08-19-agent-runtime-inspection.md
 2026-08-19-agent-runtime-inspection.md: ab63a6ea9ebb994ad5668f284455e00438512e11
-2026-08-19-agent-runtime-inspection.zh.md: dd2e9c48586d9d2371c99710c7bfc003d8d7f964
+2026-08-19-agent-runtime-inspection.zh.md: 004e5a017c027eb242c8d3e26a823f7ddca5231f

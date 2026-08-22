@@ -40,4 +40,4 @@ Hero 布局在工作区选择器下方增加模式行（`heroPickerRows` 包住�
 
 ## Related
 
-[AI workspace presentation layer (v2)](2026-08-14-ai-workspace-presentation-layer-v2.md) 取代本 Note 的 hero/选择器展示，同时保留其 Chat / Code preset 映射。
+[AI workspace presentation layer (v2)](2026-08-14-ai-workspace-presentation-layer-v2.zh.md) 取代本 Note 的 hero/选择器展示，同时保留其 Chat / Code preset 映射。

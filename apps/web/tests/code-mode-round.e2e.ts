@@ -10,8 +10,10 @@
 // replay/refresh only.
 // Record: DSH_SNAPSHOT=record rewrites session.jsonl, then a keyless
 // DSH_SNAPSHOT=refresh regenerates ui.expected.md.
-import { readFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type { Browser, Page } from 'playwright'
 import { chromium } from 'playwright'
 import { afterAll, beforeAll, describe, expect, it, onTestFailed } from 'vitest'
@@ -25,6 +27,10 @@ import { connectFreshWorkspace, newEnglishPage, saveFailureShot } from './suppor
 const FIXTURE = fileURLToPath(new URL('./snapshots/code-mode-round/session.jsonl', import.meta.url))
 const UI_EXPECTED = fileURLToPath(new URL('./snapshots/code-mode-round/ui.expected.md', import.meta.url))
 const MODE = webSnapshotMode()
+const LIVE_SHELL_TOOL = process.platform === 'win32' ? 'pwsh' : 'bash'
+const LIVE_SHELL_ROW = process.platform === 'win32'
+  ? '[data-tool="pwsh"] [role="button"]'
+  : '[data-sample="bash"]'
 
 // The scenario's one drive prompt: elicits one program with a bash sub-call
 // and a failing read the program tolerates — the sub-row set the assertions
@@ -37,12 +43,21 @@ describe('web e2e: Code Mode round renders nested sub-calls', () => {
   let browser: Browser
   let page: Page
   let tripwire: ReturnType<typeof watchConsole>
+  let replayDir: string | undefined
   const sessionEvents: SessionEvent[] = []
 
   beforeAll(async () => {
+    let replayFixture = FIXTURE
+    if (MODE !== 'record' && process.platform === 'win32') {
+      replayDir = await mkdtemp(join(tmpdir(), 'dsh-code-mode-pwsh-replay-'))
+      replayFixture = join(replayDir, 'session.jsonl')
+      await writeFile(replayFixture, (await readFile(FIXTURE, 'utf8'))
+        .replaceAll('tools.bash', 'tools.pwsh')
+        .replaceAll('"name":"bash"', '"name":"pwsh"'))
+    }
     scaffold = await launchWebScaffold({
       toolsMode: 'code',
-      ...(MODE === 'record' ? {} : { replayFixture: FIXTURE, paceMs: 15 }),
+      ...(MODE === 'record' ? {} : { replayFixture, paceMs: 15 }),
     })
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
@@ -57,6 +72,7 @@ describe('web e2e: Code Mode round renders nested sub-calls', () => {
   afterAll(async () => {
     await browser?.close()
     await scaffold?.close()
+    if (replayDir !== undefined) await rm(replayDir, { recursive: true, force: true })
   })
 
   it('drives the recorded prompt to a settled turn (all modes)', async () => {
@@ -96,10 +112,10 @@ describe('web e2e: Code Mode round renders nested sub-calls', () => {
       expect(Array.isArray(data.content)).toBe(true)
       expect(typeof data.isError).toBe('boolean')
     }
-    const bash = dispatches.find(dispatch => (dispatch.data as { name: string }).name === 'bash')
-    expect(bash).toBeDefined()
-    const bashContent = (bash!.data as { content: { type: string; text?: string }[] }).content
-    expect(bashContent.filter(block => block.type === 'text').map(block => block.text).join('')).toContain('CODE_ROUND_OK')
+    const shell = dispatches.find(dispatch => (dispatch.data as { name: string }).name === LIVE_SHELL_TOOL)
+    expect(shell).toBeDefined()
+    const shellContent = (shell!.data as { content: { type: string; text?: string }[] }).content
+    expect(shellContent.filter(block => block.type === 'text').map(block => block.text).join('')).toContain('CODE_ROUND_OK')
   })
 
   it.skipIf(MODE === 'record')('renders the code parent row with nested sub-rows behind the activity fold', async () => {
@@ -118,20 +134,20 @@ describe('web e2e: Code Mode round renders nested sub-calls', () => {
     // sample registration.
     const nest = page.locator('[data-subcalls]').first()
     await nest.waitFor({ timeout: 10_000 })
-    expect(await nest.locator('[data-sample="bash"]').count()).toBeGreaterThanOrEqual(1)
+    expect(await nest.locator(LIVE_SHELL_ROW).count()).toBeGreaterThanOrEqual(1)
     // The failing read sub-call wears the same error state a native failed
     // row wears (the recorded program tolerates a read of missing.txt).
     expect(await nest.locator('[data-state="error"]').count()).toBeGreaterThanOrEqual(1)
   }, 60_000)
 
-  it.skipIf(MODE === 'record')('a bash sub-row click highlights the row without opening an embedded tool view', async () => {
+  it.skipIf(MODE === 'record')('a shell sub-row click highlights the row without opening an embedded tool view', async () => {
     onTestFailed(() => saveFailureShot(page, 'web-e2e-code-mode-details'))
     const nest = page.locator('[data-subcalls]').first()
     const frame = page.locator('[style*="grid-template-columns"]').first()
     // The Files column is open by default; a tool-row click must not change
     // its track; Tool arguments and results live in the trajectory surfaces.
     expect(await frame.getAttribute('data-details-collapsed')).toBeNull()
-    await nest.locator('[data-sample="bash"]').first().click()
+    await nest.locator(LIVE_SHELL_ROW).first().click()
     await expect.poll(() => frame.getAttribute('data-details-collapsed'), { timeout: 5_000 }).toBeNull()
     // No embedded tool view mounted inside the column: the Files tree is the
     // column's only occupant.

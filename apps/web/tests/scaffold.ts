@@ -898,8 +898,12 @@ async function persistSeedSession(
 function normalizeAria(snapshot: string, workspaceCwd: string): string {
   // The session heading renders the workspace's basename, not the full
   // path, so both spellings must collapse to the token.
-  const base = workspaceCwd.split('/').pop()!
+  const base = workspaceCwd.split(/[\\/]/).pop()!
+  // ariaSnapshot quotes Windows paths, so each source backslash appears as
+  // two characters in the snapshot string rather than one path separator.
+  const quotedWorkspaceCwd = workspaceCwd.replaceAll('\\', '\\\\')
   return snapshot
+    .split(quotedWorkspaceCwd).join('{{cwd}}')
     .split(workspaceCwd).join('{{cwd}}')
     .split(base).join('{{workspace}}')
     .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '{{uuid}}')

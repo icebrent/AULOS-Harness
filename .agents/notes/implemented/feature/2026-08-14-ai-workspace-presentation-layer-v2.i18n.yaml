@@ -3,4 +3,4 @@
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-08-14-ai-workspace-presentation-layer-v2.md
 2026-08-14-ai-workspace-presentation-layer-v2.md: 9527b4e89e7fa4cb10e582276d39edd913eb9b1c
-2026-08-14-ai-workspace-presentation-layer-v2.zh.md: 7be479f6c0829d415ffe47cde22c465d44777072
+2026-08-14-ai-workspace-presentation-layer-v2.zh.md: f10ba9a7b3326c038d1af669bca6a6564f2890b9

@@ -6,6 +6,8 @@
     - img
 - img
 - text: Minimal mode
+- button "Show or hide the Files panel"
+- button "Full trajectory"
 - button "Session log":
   - text: Session log
   - img

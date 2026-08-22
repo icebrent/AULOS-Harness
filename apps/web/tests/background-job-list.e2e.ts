@@ -1,5 +1,5 @@
 // Web e2e scenario: the session-header background-job list over the real
-// host. No model call is involved — a genuine `run_in_background` bash call
+// host. No model call is involved — a genuine `run_in_background` shell call
 // registers with `ctx.jobs`, and the assertion chain is the whole delivery
 // path: registry change feed → api-proxy `session/jobs` frame → the client's
 // `jobsBySession` mirror → the header action.
@@ -27,7 +27,14 @@ const MODE = webSnapshotMode()
 const SEED_ID = 'background-job-list-web-e2e'
 // Long enough that the running assertions never race the process exiting on
 // their own; the test kills it explicitly to reach the settled state.
-const COMMAND = 'sleep 45'
+const LIVE_SHELL_TOOL = process.platform === 'win32' ? 'pwsh' : 'bash'
+const COMMAND = process.platform === 'win32' ? 'Start-Sleep -Seconds 45' : 'sleep 45'
+
+function normalizePlatformShell(snapshot: string): string {
+  return snapshot
+    .replaceAll('pwsh', 'bash')
+    .replaceAll('Start-Sleep -Seconds 45', 'sleep 45')
+}
 
 /**
  * Wait for the Host to publish the live Agent that opening a session resumes.
@@ -91,13 +98,13 @@ describe.skipIf(MODE === 'record')('web e2e: background job list', () => {
     const started = await scaffold.ctx.tools.execute({
       signal: new AbortController().signal,
       callId: CallId('background-job-list-e2e'),
-      name: 'bash',
+      name: LIVE_SHELL_TOOL,
       arguments: { command: COMMAND, description: 'Hold a background slot open', run_in_background: true },
       agent,
     })
     const reported = started.content.map(block => block.type === 'text' ? block.text : '').join('')
-    const matched = /\bbash-\d+\b/.exec(reported)
-    if (matched === null) throw new Error(`background bash reported no job id: ${reported}`)
+    const matched = new RegExp(`\\b${LIVE_SHELL_TOOL}-\\d+\\b`).exec(reported)
+    if (matched === null) throw new Error(`background shell reported no job id: ${reported}`)
     jobId = JobId(matched[0])
 
     await trigger.waitFor({ timeout: 15_000 })
@@ -106,7 +113,9 @@ describe.skipIf(MODE === 'record')('web e2e: background job list', () => {
     await row.waitFor({ timeout: 10_000 })
     await expect.poll(() => row.textContent()).toContain(COMMAND)
 
-    const snapshot = await captureStableAria(page, '[class*="menu"]', scaffold.workspaceCwd)
+    const snapshot = normalizePlatformShell(
+      await captureStableAria(page, '[class*="menu"]', scaffold.workspaceCwd),
+    )
     await compareOrRefreshGolden(RUNNING_EXPECTED, snapshot, MODE)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])
@@ -121,7 +130,9 @@ describe.skipIf(MODE === 'record')('web e2e: background job list', () => {
     const idle = page.getByRole('button', { name: '1 background job' })
     await idle.waitFor({ timeout: 20_000 })
 
-    const snapshot = await captureStableAria(page, '[class*="menu"]', scaffold.workspaceCwd)
+    const snapshot = normalizePlatformShell(
+      await captureStableAria(page, '[class*="menu"]', scaffold.workspaceCwd),
+    )
     await compareOrRefreshGolden(SETTLED_EXPECTED, snapshot, MODE)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])

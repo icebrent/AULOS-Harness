@@ -50,17 +50,17 @@ describe('ui-theme host', () => {
     const rows = collect(ctx)
     expect(rows).toHaveLength(1)
     expect(rows[0]).toMatchObject({ kind: 'script', placement: 'body' })
-    expect(scriptText(rows[0])).toContain('const preference = "system"')
+    expect(scriptText(rows[0])).toContain('const preference = "light"')
     await ctx.settings.update(settingsNamespace(THEME_SETTINGS_NAMESPACE), { preference: 'dark' })
     expect(scriptText(collect(ctx)[0])).toContain('const preference = "dark"')
     await fiber.dispose()
     expect(collect(ctx)).toEqual([])
   })
 
-  it('uses the system preference without a settings provider', async () => {
+  it('uses the AULOS light preference without a settings provider', async () => {
     const ctx = new Context()
     await ctx.plugin({ apply }).await()
-    expect(scriptText(collect(ctx)[0])).toContain('const preference = "system"')
+    expect(scriptText(collect(ctx)[0])).toContain('const preference = "light"')
   })
 
   it('falls back to the schema default while the theme namespace holds no section', async () => {
@@ -69,6 +69,6 @@ describe('ui-theme host', () => {
     const ctx = new Context()
     ctx.provide('settings', { register: () => () => {}, get: () => undefined } as never)
     await ctx.plugin({ apply }).await()
-    expect(scriptText(collect(ctx)[0])).toContain('const preference = "system"')
+    expect(scriptText(collect(ctx)[0])).toContain('const preference = "light"')
   })
 })

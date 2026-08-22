@@ -48,8 +48,8 @@ type LayoutActions = {
  */
 export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutActions>  {
   const handle = defineStore({
-    // The inspector column is part of the product layout: it opens with the
-    // first active session instead of hiding until a tool call is selected.
+    // The details column is part of the product layout: it opens with the
+    // first active session instead of waiting for a contextual selection.
     init: (): LayoutState => ({
       sidebar: SIDEBAR_DEFAULT,
       details: DETAILS_DEFAULT,
@@ -65,7 +65,7 @@ export function createLayoutStore(): EngineStoreHandle<LayoutState, LayoutAction
         if (d.narrow) d.narrowExpanded = !d.narrowExpanded
         else d.sidebar = d.sidebar === 0 ? SIDEBAR_DEFAULT : 0
       },
-      // The inspector is a single toggle like the sidebar: 0 ⟷ default width.
+      // The details column is a single toggle like the sidebar: 0 ⟷ default width.
       toggleDetails: (d) => {
         d.details = d.details === 0 ? DETAILS_DEFAULT : 0
       },

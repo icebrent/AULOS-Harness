@@ -2,13 +2,13 @@
   - navigation "Session hierarchy":
     - button "Use web_search once with queries" [disabled]
   - img
-  - text: Standard mode
+  - text: Code
+  - button "Show or hide the Files panel"
+  - button "Full trajectory"
   - button "Session log":
     - text: Session log
     - img
-  - tablist:
-    - tab "Chat" [selected]
-    - tab "Trajectory"
+- group "Current session context figures": Context 0% 23 / 128K Tokens 22 / 7 Input / Output Cache 0% 0 / 0 TTFT {{duration}} {{throughput}} tok/s
 - text: Use web_search once with queries ["DeepSeek Harness snapshot search","DeepSeek Harness multi-query search"]. Then reply exactly SEARCH_DONE and stop. {{clock}}
 - button "Copy":
   - img
@@ -16,10 +16,7 @@
   - img
   - img
   - text: Context injection @deepseek-ai/dsh-system-prompt
-- button "Search DeepSeek Harness snapshot search, DeepSeek Harness multi-query search":
-  - img
-  - img
-  - text: Search DeepSeek Harness snapshot search, DeepSeek Harness multi-query search
+- button "Completed · 1 tools"
 - paragraph: SEARCH_DONE
 - button "Copy":
   - img
@@ -30,6 +27,9 @@
 - button "Branch into a new conversation":
   - img
 - text: {{clock}} Ran for {{duration}} TTFT {{duration}} {{throughput}} tok/s
+- button "Expand trajectory panel":
+  - text: Trajectory
+  - img
 - textbox "Message the agent"
 - button "Commands":
   - img

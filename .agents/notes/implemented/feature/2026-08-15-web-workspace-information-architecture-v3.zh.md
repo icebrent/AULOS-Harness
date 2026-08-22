@@ -4,7 +4,7 @@ Status: implemented
 
 [English](2026-08-15-web-workspace-information-architecture-v3.md) | 中文
 
-部分取代 [v2 presentation layer](2026-08-14-ai-workspace-presentation-layer-v2.md)：三栏布局、浅色视觉系统、工具活动折叠与安静的会话标题栏原样保留；右侧 Inspector 与经 Activity 进入轨迹的方式被下述决策替换。
+部分取代 [v2 presentation layer](2026-08-14-ai-workspace-presentation-layer-v2.zh.md)：三栏布局、浅色视觉系统、工具活动折叠与安静的会话标题栏原样保留；右侧 Inspector 与经 Activity 进入轨迹的方式被下述决策替换。
 
 ## Problem
 

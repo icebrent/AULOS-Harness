@@ -1,6 +1,7 @@
-# Agent Note：rc.8 基础上的 AULOS 自定义层
+# Agent Note: rc.8 基础上的 AULOS 自定义层
 
 Status: implemented
+Archived: 2026-08-22
 
 [English](2026-08-21-aulos-rc8-customization-layer.md) | 中文
 

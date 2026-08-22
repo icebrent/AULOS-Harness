@@ -42,6 +42,10 @@ const LIVE_TOOL_FIRST = 'CHAT_SCROLL_TOOL_STREAM_FIRST'
 const LIVE_TOOL_DONE = 'CHAT_SCROLL_TOOL_STREAM_DONE'
 const TOOL_READY_FILE = '.chat-scroll-tool-ready'
 const TOOL_RELEASE_FILE = '.chat-scroll-tool-release'
+const LIVE_SHELL_TOOL = process.platform === 'win32' ? 'pwsh' : 'bash'
+const LIVE_SHELL_ROW = process.platform === 'win32'
+  ? '[data-tool="pwsh"] [role="button"]'
+  : '[data-sample="bash"]'
 const INPUTS_SESSION_ID = 'chat-scroll-inputs-e2e'
 const FLING_SESSION_ID = 'chat-scroll-fling-e2e'
 const LIVE_FLING_PROMPT = 'CHAT_SCROLL_FLING_USER Keep streaming while I fling back through older output.'
@@ -114,12 +118,18 @@ function textStream(first: string, done: string, deltaCount: number): StreamChun
 }
 
 function toolStream(): StreamChunk[] {
-  const command = [
-    `: > ${TOOL_READY_FILE}`,
-    `while [ ! -f ${TOOL_RELEASE_FILE} ]; do sleep 0.02; done`,
-    'line=1',
-    `while [ "$line" -le 64 ]; do printf '${LIVE_TOOL_RESULT} line %02d\\n' "$line"; line=$((line + 1)); done`,
-  ].join('; ')
+  const command = process.platform === 'win32'
+    ? [
+      `New-Item -ItemType File -Path ${TOOL_READY_FILE} -Force | Out-Null`,
+      `while (-not (Test-Path ${TOOL_RELEASE_FILE})) { Start-Sleep -Milliseconds 20 }`,
+      `1..64 | ForEach-Object { '${LIVE_TOOL_RESULT} line {0:D2}' -f $_ }`,
+    ].join('; ')
+    : [
+      `: > ${TOOL_READY_FILE}`,
+      `while [ ! -f ${TOOL_RELEASE_FILE} ]; do sleep 0.02; done`,
+      'line=1',
+      `while [ "$line" -le 64 ]; do printf '${LIVE_TOOL_RESULT} line %02d\\n' "$line"; line=$((line + 1)); done`,
+    ].join('; ')
   const args = JSON.stringify({ command, description: LIVE_TOOL_RESULT })
   return [
     { type: 'block-start', index: 0, blockType: 'tool-call' },
@@ -127,13 +137,13 @@ function toolStream(): StreamChunk[] {
       type: 'tool-call-delta',
       index: 0,
       id: LIVE_TOOL_CALL_ID,
-      name: 'bash',
+      name: LIVE_SHELL_TOOL,
       argumentsDelta: args,
     },
     {
       type: 'block-end',
       index: 0,
-      block: { type: 'tool-call', id: LIVE_TOOL_CALL_ID, name: 'bash', arguments: args },
+      block: { type: 'tool-call', id: LIVE_TOOL_CALL_ID, name: LIVE_SHELL_TOOL, arguments: args },
     },
     { type: 'usage', usage: { inputTokens: 256, outputTokens: 48 } },
     { type: 'finish', reason: { kind: 'tool-calls' } },
@@ -569,7 +579,7 @@ describe('web e2e: long Chat scroll contract', () => {
         // names plus a count, not the raw row.
         const liveFold = world.page.getByRole('status').filter({ hasText: 'Working…' })
         await liveFold.waitFor({ timeout: 15_000 })
-        expect(await liveFold.textContent()).toContain('bash')
+        expect(await liveFold.textContent()).toContain(LIVE_SHELL_TOOL)
         await expectBottom(world.page)
 
         await wheelTranscript(world.page, -1_200)
@@ -615,7 +625,7 @@ describe('web e2e: long Chat scroll contract', () => {
       const settledFold = world.page.getByRole('button', { name: /Completed · \d+ tools/, expanded: false }).last()
       await settledFold.waitFor({ timeout: 15_000 })
       await settledFold.click()
-      const liveRowSelector = `[data-chat-call-id="${LIVE_TOOL_CALL_ID}"] [data-sample="bash"]`
+      const liveRowSelector = `[data-chat-call-id="${LIVE_TOOL_CALL_ID}"] ${LIVE_SHELL_ROW}`
       const liveRow = world.page.locator(liveRowSelector)
       await wheelUntilVisible(world.page, liveRowSelector, -300)
       const toolAnchor = await liveRow.evaluate((row) => {

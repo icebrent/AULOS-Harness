@@ -30,13 +30,13 @@
     - text: English
     - img
   - text: Appearance
-  - button "Light":
+  - button "Light" [pressed]:
     - img
     - text: Light
   - button "Dark":
     - img
     - text: Dark
-  - button "System" [pressed]:
+  - button "System":
     - img
     - text: System
   - text: Enter behavior while busy Busy only; Cmd/Ctrl+Enter uses the other behavior

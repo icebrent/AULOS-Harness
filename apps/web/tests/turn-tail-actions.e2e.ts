@@ -42,6 +42,7 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
   let tripwire: ReturnType<typeof watchConsole>
   let sessionEvents: SessionEvent[]
   let sidecarDir: string | undefined
+  let replayDir: string | undefined
 
   afterEach(async () => {
     // close() carries the fixture-consumption tripwire, so its failure is the
@@ -54,6 +55,8 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
     await closing?.close().catch((error: unknown) => failures.push(error))
     if (sidecarDir !== undefined) await rm(sidecarDir, { recursive: true, force: true }).catch((error: unknown) => failures.push(error))
     sidecarDir = undefined
+    if (replayDir !== undefined) await rm(replayDir, { recursive: true, force: true }).catch((error: unknown) => failures.push(error))
+    replayDir = undefined
     if (failures.length === 1) throw failures[0]
     if (failures.length > 1) throw new AggregateError(failures, 'turn-tail-actions teardown failed')
   })
@@ -61,6 +64,13 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
   /** Boot scaffold + page, materializing the sidecar before the replay row installs. */
   async function launch(buildOverride?: (sidecarHome: string) => ReplayOverrideDoc): Promise<void> {
     sessionEvents = []
+    let replayFixture = FIXTURE
+    if (MODE !== 'record' && process.platform === 'win32') {
+      replayDir = await mkdtemp(join(tmpdir(), 'dsh-turn-tail-pwsh-replay-'))
+      replayFixture = join(replayDir, 'session.jsonl')
+      await writeFile(replayFixture, (await readFile(FIXTURE, 'utf8'))
+        .replaceAll('"name":"bash"', '"name":"pwsh"'))
+    }
     let overridePath: string | undefined
     if (buildOverride !== undefined) {
       sidecarDir = await mkdtemp(join(tmpdir(), 'dsh-web-e2e-sidecar-'))
@@ -70,7 +80,7 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
     scaffold = await launchWebScaffold(
       MODE === 'record'
         ? {}
-        : { replayFixture: FIXTURE, ...(overridePath === undefined ? {} : { replayOverride: overridePath }) },
+        : { replayFixture, ...(overridePath === undefined ? {} : { replayOverride: overridePath }) },
     )
     scaffold.ctx.on('session/event', (_session, event: SessionEvent) => { sessionEvents.push(event) })
     browser = await chromium.launch()
@@ -117,7 +127,10 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
     // The marker IS the synchronization: the second call is provably parked,
     // so the first step's message and tool result are already durable.
     await expect.poll(() => existsSync(marker), { timeout: 20_000 }).toBe(true)
-    await expect.poll(() => page.getByText(NARRATION, { exact: true }).count(), { timeout: 10_000 }).toBe(1)
+    await expect.poll(() => sessionEvents.some(event => event.type === 'assistant/message'
+      && event.data.message.content.some(block => block.type === 'text' && block.text === NARRATION)), {
+      timeout: 10_000,
+    }).toBe(true)
     // The running turn's activity fold owns live status whenever it exists.
     await expect.poll(
       () => page.getByRole('status').filter({ hasText: 'Working…' }).isVisible(),
@@ -129,7 +142,8 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
     await expect.poll(() => copyButtons.count(), { timeout: 10_000 }).toBe(1)
     expect(await page.getByRole('button', { name: 'Branch into a new conversation' }).count()).toBe(0)
     await copyButtons.first().focus()
-    const running = await captureStableAria(page, '[class*="centerCol"]', scaffold!.workspaceCwd)
+    const running = (await captureStableAria(page, '[class*="centerCol"]', scaffold!.workspaceCwd))
+      .replaceAll('pwsh', 'bash')
     await compareOrRefreshGolden(RUNNING_EXPECTED, running, MODE)
 
     // Closing the turn from the park is the state change under test: an
@@ -141,7 +155,8 @@ describe('web e2e: assistant IconActions wait for the turn to end', () => {
     await expect.poll(() => copyButtons.count(), { timeout: 10_000 }).toBe(2)
     await expect.poll(() => page.locator('[data-streaming="true"]').count(), { timeout: 10_000 }).toBe(0)
     await copyButtons.last().focus()
-    const settledAria = await captureStableAria(page, '[class*="centerCol"]', scaffold!.workspaceCwd)
+    const settledAria = (await captureStableAria(page, '[class*="centerCol"]', scaffold!.workspaceCwd))
+      .replaceAll('pwsh', 'bash')
     await compareOrRefreshGolden(SETTLED_EXPECTED, settledAria, MODE)
     expect(tripwire.pageErrors).toEqual([])
     expect(tripwire.warnings).toEqual([])

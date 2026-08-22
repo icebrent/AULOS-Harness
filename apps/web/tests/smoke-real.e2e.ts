@@ -147,6 +147,10 @@ const UI_PLUGIN_DIRS = [
   'ui-model-selection', 'ui-user-questions', 'ui-trajectory', 'ui-files', '../session-query/session-log-export',
 ]
 const ROUND_DONE_MARKER = 'WEB_ROUND_DONE'
+const LIVE_SHELL_TOOL = process.platform === 'win32' ? 'pwsh' : 'bash'
+const LIVE_SHELL_ROW = process.platform === 'win32'
+  ? '[data-tool="pwsh"] [role="button"]'
+  : '[data-sample="bash"]'
 const notReady = UI_PLUGIN_DIRS.filter((dir) => {
   const bundle = join(REPO_ROOT, 'packages/client', dir, 'lib/client.js')
   return !existsSync(bundle) || !readFileSync(bundle, 'utf8').includes('exports.apply')
@@ -385,7 +389,7 @@ describe('dsh web keyless CLI smoke', () => {
       await new Promise<void>(resolveClose => provider.close(() => { resolveClose() }))
       rmSync(workspace, { recursive: true, force: true })
     }
-  }, 30_000)
+  }, process.platform === 'win32' ? 120_000 : 30_000)
 
   it('DSH_TOOLS_MODE=code collapses the provider wire tools to run_code with the SDK prompt section', async () => {
     requireDist()
@@ -534,9 +538,10 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY || notReady.length > 0)('web smoke
 
   it('empty-state first send completes a real model round', async () => {
     onTestFailed(() => saveFailureShot(page, 'w5-first-round'))
-    // This scenario spawns its own server against a fresh $DSH_HOME with the
-    // DeepSeek credential inherited from the environment, so no onboarding
-    // step mounts and the page is immediately interactive.
+    const welcome = page.getByRole('dialog', { name: 'Internal Testing Notice' })
+    await welcome.waitFor({ timeout: 15_000 })
+    await welcome.getByRole('button', { name: 'Continue' }).click()
+    await welcome.waitFor({ state: 'detached', timeout: 15_000 })
     // Fresh world: connect a Workspace so the composer starts live.
     await connectFreshWorkspace(page, sessionsDir)
     const input = page.locator('textarea').first()
@@ -593,10 +598,10 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY || notReady.length > 0)('web smoke
     await screen(page, '07-back-to-chat')
   })
 
-  it('bash differential rendering: the settled fold reveals the tool row and its click keeps the Files column', async () => {
+  it('shell differential rendering: the settled fold reveals the tool row and its click keeps the Files column', async () => {
     onTestFailed(() => saveFailureShot(page, 'w5-tool-details'))
     const input = page.locator('textarea').first()
-    await input.fill('请用 bash 工具运行命令 echo w5marker 然后告诉我结果')
+    await input.fill(`请用 ${LIVE_SHELL_TOOL} 工具运行命令 echo w5marker 然后告诉我结果`)
     await input.press('Enter')
     // The settled turn folds its tool activity; expand the fold, then wait
     // for the tool ROW, not response text (the reply echoes any marker).
@@ -606,7 +611,7 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY || notReady.length > 0)('web smoke
     const fold = page.getByRole('button', { name: /Completed · \d+ tools/ }).first()
     await fold.waitFor({ timeout: 120_000 })
     await fold.click()
-    const toolRow = page.locator('[data-sample="bash"]')
+    const toolRow = page.locator(LIVE_SHELL_ROW)
     await toolRow.waitFor({ timeout: 120_000 })
     await screen(page, '08-bash-round')
     // The Files column is open by default and a tool-row click must not
@@ -621,7 +626,7 @@ describe.skipIf(!process.env.DEEPSEEK_API_KEY || notReady.length > 0)('web smoke
   it('sidebar drag widens the column and resets across reload', async () => {
     onTestFailed(() => saveFailureShot(page, 'w5-drag'))
     const before = await firstTrack(page)
-    const handle = page.locator('[class*="handle"]').first()
+    const handle = page.locator('[data-side="sidebar"]')
     const box = await handle.boundingBox()
     expect(box).not.toBeNull()
     await page.mouse.move(box!.x + box!.width / 2, box!.y + 300)

@@ -1,3 +1,4 @@
+- button "Back to conversation"
 - toolbar "Trajectory toolbar":
   - button "Use actual duration": Duration
   - button "Collapse turns": Turns
